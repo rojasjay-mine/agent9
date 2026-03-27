@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent9 — Infrastructure That Fixes Itself</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #070709;
+    --panel: #0d0e12;
+    --border: #1c1e26;
+    --teal: #00d4aa;
+    --teal-dim: #00806a;
+    --amber: #f5a623;
+    --red: #ff4e4e;
+    --text: #c8cad4;
+    --text-dim: #5a5d6e;
+    --white: #f0f2ff;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    top: -100%; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--teal), transparent);
+    animation: scan 8s linear infinite;
+    opacity: 0.15;
+    z-index: 1;
+    pointer-events: none;
+  }
+  @keyframes scan { from { top: -2px; } to { top: 100%; } }
+  nav {
+    position: fixed; top: 0; width: 100%;
+    padding: 18px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(7,7,9,0.9);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .logo { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 18px; color: var(--white); letter-spacing: 2px; }
+  .logo span { color: var(--teal); }
+  .nav-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .btn {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    padding: 10px 24px; border: 1px solid var(--teal);
+    background: transparent; color: var(--teal); cursor: pointer;
+    letter-spacing: 1px; transition: all 0.2s; text-decoration: none; display: inline-block;
+  }
+  .btn:hover { background: var(--teal); color: var(--black); }
+  .btn-solid { background: var(--teal); color: var(--black); font-weight: 500; }
+  .btn-solid:hover { background: #00f0c4; border-color: #00f0c4; }
+  section { position: relative; z-index: 2; }
+  #hero {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+    padding: 120px 40px 80px; max-width: 1200px; margin: 0 auto;
+  }
+  .eyebrow { font-size: 11px; color: var(--teal); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 28px; opacity: 0; animation: fadeup 0.6s ease forwards 0.2s; }
+  h1 { font-family: 'Orbitron', monospace; font-size: clamp(36px, 6vw, 72px); font-weight: 900; color: var(--white); line-height: 1.1; letter-spacing: -1px; max-width: 800px; opacity: 0; animation: fadeup 0.7s ease forwards 0.4s; }
+  h1 .accent { color: var(--teal); }
+  h1 .dim { color: var(--text-dim); }
+  .hero-sub { margin-top: 24px; font-size: 15px; color: var(--text-dim); max-width: 520px; line-height: 1.8; opacity: 0; animation: fadeup 0.7s ease forwards 0.6s; }
+  .hero-cta { margin-top: 40px; display: flex; gap: 16px; flex-wrap: wrap; opacity: 0; animation: fadeup 0.7s ease forwards 0.8s; }
+  @keyframes fadeup { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .terminal { margin-top: 64px; background: var(--panel); border: 1px solid var(--border); max-width: 680px; opacity: 0; animation: fadeup 0.7s ease forwards 1.0s; }
+  .terminal-bar { background: #111318; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+  .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .t-red { background: #ff5f56; } .t-yellow { background: #ffbd2e; } .t-green { background: #27c93f; }
+  .terminal-title { font-size: 11px; color: var(--text-dim); margin-left: 8px; letter-spacing: 1px; }
+  .terminal-body { padding: 20px 24px; font-size: 13px; line-height: 2; min-height: 200px; }
+  .t-line { display: flex; gap: 10px; }
+  .t-tag { min-width: 110px; font-weight: 500; }
+  .t-alert { color: var(--red); } .t-agent { color: var(--teal); } .t-info { color: var(--amber); } .t-ok { color: #27c93f; } .t-dim-l { color: var(--text-dim); } .t-val { color: var(--white); }
+  .cursor { display: inline-block; width: 8px; height: 14px; background: var(--teal); animation: blink 1s step-end infinite; vertical-align: middle; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .divider { border: none; border-top: 1px solid var(--border); }
+  .stat-bar { display: flex; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--panel); }
+  .stat-item { flex: 1; padding: 28px 32px; border-right: 1px solid var(--border); }
+  .stat-item:last-child { border-right: none; }
+  .stat-num { font-family: 'Orbitron', monospace; font-size: 32px; font-weight: 700; color: var(--white); }
+  .stat-num .u { color: var(--teal); font-size: 18px; }
+  .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
+  #now { max-width: 1200px; margin: 0 auto; padding: 100px 40px; }
+  .section-label { font-size: 11px; letter-spacing: 4px; color: var(--teal); text-transform: uppercase; margin-bottom: 16px; }
+  h2 { font-family: 'Orbitron', monospace; font-size: clamp(24px, 3.5vw, 42px); font-weight: 700; color: var(--white); line-height: 1.2; margin-bottom: 24px; }
+  .flow-row { display: flex; align-items: center; margin-top: 56px; flex-wrap: wrap; }
+  .flow-node { flex: 1; min-width: 160px; background: var(--panel); border: 1px solid var(--border); padding: 28px 24px; }
+  .flow-node:hover { border-color: var(--teal-dim); }
+  .fn-icon { font-size: 11px; color: var(--teal); letter-spacing: 2px; margin-bottom: 12px; }
+  .fn-title { font-family: 'Orbitron', monospace; font-size: 14px; color: var(--white); font-weight: 700; margin-bottom: 8px; }
+  .fn-desc { font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+  .flow-arrow { font-size: 20px; color: var(--teal); padding: 0 8px; flex-shrink: 0; }
+
+  /* PRICING */
+  #pricing { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 100px 40px; }
+  .pricing-inner { max-width: 1000px; margin: 0 auto; }
+  .billing-toggle { display: flex; align-items: center; gap: 16px; margin-top: 40px; margin-bottom: 56px; font-size: 13px; }
+  .toggle-pill { display: flex; background: var(--black); border: 1px solid var(--border); padding: 4px; gap: 2px; }
+  .toggle-opt { padding: 8px 20px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; cursor: pointer; border: none; background: transparent; color: var(--text-dim); transition: all 0.2s; }
+  .toggle-opt.active { background: var(--teal); color: var(--black); font-weight: 500; }
+  .save-badge { font-size: 11px; padding: 4px 10px; border: 1px solid var(--amber); color: var(--amber); letter-spacing: 1px; }
+  .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+  .plan-card { background: var(--black); padding: 40px 36px; position: relative; }
+  .plan-card.featured { background: #0a1410; border: 1px solid var(--teal); margin: -1px; z-index: 1; }
+  .plan-badge { position: absolute; top: -1px; right: 28px; font-size: 10px; padding: 5px 14px; background: var(--teal); color: var(--black); font-weight: 500; letter-spacing: 2px; }
+  .plan-name { font-family: 'Orbitron', monospace; font-size: 13px; letter-spacing: 3px; color: var(--text-dim); margin-bottom: 24px; }
+  .plan-price { font-family: 'Orbitron', monospace; font-size: 48px; font-weight: 900; color: var(--white); line-height: 1; }
+  .plan-price .curr { font-size: 24px; color: var(--text-dim); vertical-align: super; }
+  .plan-price .per { font-size: 13px; color: var(--text-dim); font-family: 'IBM Plex Mono'; font-weight: 300; }
+  .plan-annual { font-size: 12px; color: var(--text-dim); margin-top: 8px; margin-bottom: 32px; min-height: 20px; }
+  .plan-annual .highlight { color: var(--teal); }
+  .plan-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 28px; }
+  .plan-feature { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; color: var(--text); padding: 9px 0; border-bottom: 1px solid rgba(28,30,38,0.5); }
+  .plan-feature:last-of-type { border: none; }
+  .plan-feature .check { color: var(--teal); flex-shrink: 0; }
+  .plan-feature .na { color: var(--text-dim); flex-shrink: 0; }
+  .plan-cta { margin-top: 36px; width: 100%; display: block; text-align: center; padding: 14px; }
+
+  /* ROADMAP */
+  #vision { padding: 100px 40px; border-bottom: 1px solid var(--border); }
+  .vision-inner { max-width: 1200px; margin: 0 auto; }
+  .timeline { margin-top: 60px; }
+  .tl-item { display: grid; grid-template-columns: 120px 40px 1fr; align-items: start; }
+  .tl-version { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: var(--text-dim); padding-top: 24px; text-align: right; padding-right: 20px; }
+  .tl-version.active { color: var(--teal); }
+  .tl-line-col { display: flex; flex-direction: column; align-items: center; padding-top: 24px; }
+  .tl-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); background: var(--black); flex-shrink: 0; z-index: 1; }
+  .tl-dot.active { border-color: var(--teal); background: var(--teal); animation: pulse 2s infinite; }
+  .tl-vline { width: 1px; background: var(--border); flex: 1; min-height: 80px; }
+  .tl-content { padding: 20px 0 40px 24px; }
+  .tl-title { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 10px; }
+  .tl-desc { font-size: 13px; color: var(--text-dim); line-height: 1.9; max-width: 560px; }
+  .tl-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .tag { font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); color: var(--text-dim); letter-spacing: 1px; }
+  .tag.live { border-color: var(--teal); color: var(--teal); }
+
+  /* ANGLE */
+  #angle { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 100px 40px; text-align: center; }
+  .big-quote { font-family: 'Orbitron', monospace; font-size: clamp(28px, 4.5vw, 52px); font-weight: 900; color: var(--white); line-height: 1.15; max-width: 900px; margin: 0 auto; }
+  .big-quote .cross { text-decoration: line-through; color: var(--text-dim); }
+  .big-quote .teal { color: var(--teal); }
+  .quote-sub { margin-top: 24px; font-size: 14px; color: var(--text-dim); max-width: 480px; margin-left: auto; margin-right: auto; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); margin-top: 64px; max-width: 800px; margin-left: auto; margin-right: auto; text-align: left; }
+  .compare-cell { background: var(--black); padding: 24px 28px; }
+  .compare-label { font-size: 11px; letter-spacing: 3px; color: var(--text-dim); margin-bottom: 16px; text-transform: uppercase; }
+  .compare-label.bad { color: var(--red); } .compare-label.good { color: var(--teal); }
+  .compare-item { font-size: 13px; color: var(--text-dim); padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .compare-item:last-child { border: none; }
+  .compare-item.good-item { color: var(--white); }
+
+  /* FORM */
+  #cta { padding: 100px 40px; position: relative; z-index: 2; }
+  .cta-inner { max-width: 640px; margin: 0 auto; }
+  .form-card { background: var(--panel); border: 1px solid var(--border); padding: 48px 40px; margin-top: 40px; }
+  .form-row { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+  .field-label { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 6px; display: block; }
+  .field-input { width: 100%; background: var(--black); border: 1px solid var(--border); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 12px 16px; outline: none; transition: border-color 0.2s; }
+  .field-input:focus { border-color: var(--teal); }
+  .field-input::placeholder { color: var(--text-dim); }
+  .field-select { width: 100%; background: var(--black); border: 1px solid var(--border); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 12px 16px; outline: none; appearance: none; cursor: pointer; transition: border-color 0.2s; }
+  .field-select:focus { border-color: var(--teal); }
+  .field-select option { background: var(--black); color: var(--white); }
+  .submit-btn { width: 100%; padding: 16px; background: var(--teal); color: var(--black); border: none; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 2px; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+  .submit-btn:hover { background: #00f0c4; }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .form-note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 16px; line-height: 1.8; }
+  .success-msg { display: none; text-align: center; padding: 40px 20px; }
+  .success-msg.show { display: block; }
+  .success-icon { font-size: 32px; color: var(--teal); font-family: 'Orbitron', monospace; font-weight: 900; margin-bottom: 16px; }
+  .success-text { font-size: 14px; color: var(--text-dim); line-height: 1.9; }
+
+  footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-dim); flex-wrap: wrap; gap: 12px; position: relative; z-index: 2; }
+
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    #hero, #now, #pricing, #angle, #cta { padding-left: 20px; padding-right: 20px; }
+    .stat-bar { flex-direction: column; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .flow-row { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); padding: 8px 0; width: 100%; text-align: center; }
+    .plans-grid { grid-template-columns: 1fr; }
+    .plan-card.featured { margin: 0; }
+    .tl-item { grid-template-columns: 70px 30px 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .form-card { padding: 28px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">FIX<span>IT</span>AGENT</div>
+  <div class="nav-status"><div class="dot"></div>AGENT9 OPERATIONAL</div>
+  <a href="#cta" class="btn">Request Access</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="eyebrow">// AUTONOMOUS INFRASTRUCTURE ENGINE — v0.1 LIVE</div>
+  <h1>Infrastructure<br>that <span class="accent">fixes itself.</span><br><span class="dim">No humans required.</span></h1>
+  <p class="hero-sub">Agent9 receives your infrastructure alerts, diagnoses the root cause using AI, and posts the exact fix to your team — before anyone wakes up.</p>
+  <div class="hero-cta">
+    <a href="#cta" class="btn btn-solid">Get Early Access</a>
+    <a href="#pricing" class="btn">See Pricing</a>
+  </div>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="t-dot t-red"></div><div class="t-dot t-yellow"></div><div class="t-dot t-green"></div>
+      <span class="terminal-title">agent9 — live session</span>
+    </div>
+    <div class="terminal-body" id="terminal-output"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stat-bar">
+  <div class="stat-item"><div class="stat-num">&lt;<span class="u">2s</span></div><div class="stat-label">DIAGNOSIS TIME</div></div>
+  <div class="stat-item"><div class="stat-num">24<span class="u">/7</span></div><div class="stat-label">ALWAYS WATCHING</div></div>
+  <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">HUMANS PAGED AT 3AM</div></div>
+  <div class="stat-item"><div class="stat-num">v<span class="u">0.1</span></div><div class="stat-label">LIVE TODAY</div></div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="now">
+  <div class="section-label">// CURRENT BUILD</div>
+  <h2>What Agent9 does right now.</h2>
+  <p style="color:var(--text-dim);max-width:520px;font-size:13px;line-height:1.9;">v0.1 is live. One webhook. One brain. One output. Already handles what takes your team 20 minutes at midnight.</p>
+  <div class="flow-row">
+    <div class="flow-node">
+      <div class="fn-icon">01 // INPUT</div>
+      <div class="fn-title">WEBHOOK ALERT</div>
+      <div class="fn-desc">Any monitoring tool — Datadog, PagerDuty, Prometheus — fires a webhook to Agent9.</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">02 // BRAIN</div>
+      <div class="fn-title">CLAUDE DIAGNOSES</div>
+      <div class="fn-desc">AI reads the alert, determines severity, root cause, and the exact recommended fix.</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">03 // OUTPUT</div>
+      <div class="fn-title">SLACK POST</div>
+      <div class="fn-desc">Structured report hits #alerts instantly. SEVERITY. DIAGNOSIS. FIX. Done.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="pricing-inner">
+    <div class="section-label">// PRICING</div>
+    <h2>Simple. No per-seat nonsense.</h2>
+    <p style="color:var(--text-dim);font-size:13px;max-width:480px;line-height:1.9;">Pay per environment, not per engineer. Start free for 14 days — no card required.</p>
+    <div class="billing-toggle">
+      <div class="toggle-pill">
+        <button class="toggle-opt active" id="btn-monthly" onclick="setBilling('monthly')">MONTHLY</button>
+        <button class="toggle-opt" id="btn-annual" onclick="setBilling('annual')">ANNUAL</button>
+      </div>
+      <span class="save-badge" id="save-badge" style="display:none">SAVE UP TO $600/YR</span>
+    </div>
+    <div class="plans-grid">
+      <div class="plan-card">
+        <div class="plan-name">STARTER</div>
+        <div class="plan-price"><span class="curr">$</span><span id="starter-price">79</span><span class="per">/mo</span></div>
+        <div class="plan-annual" id="starter-annual">&nbsp;</div>
+        <hr class="plan-divider">
+        <div class="plan-feature"><span class="check">✓</span> 1 environment</div>
+        <div class="plan-feature"><span class="check">✓</span> Unlimited webhook alerts</div>
+        <div class="plan-feature"><span class="check">✓</span> Claude AI diagnosis</div>
+        <div class="plan-feature"><span class="check">✓</span> Slack #alerts posting</div>
+        <div class="plan-feature"><span class="check">✓</span> SEVERITY + DIAGNOSIS + FIX</div>
+        <div class="plan-feature"><span class="check">✓</span> 14-day free trial</div>
+        <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Multi-agent architecture</span></div>
+        <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Priority support</span></div>
+        <a href="#cta" class="btn plan-cta">Start Free Trial</a>
+      </div>
+      <div class="plan-card featured">
+        <div class="plan-badge">MOST POPULAR</div>
+        <div class="plan-name" style="color:var(--teal)">PRO</div>
+        <div class="plan-price"><span class="curr">$</span><span id="pro-price">299</span><span class="per">/mo</span></div>
+        <div class="plan-annual" id="pro-annual">&nbsp;</div>
+        <hr class="plan-divider" style="border-color:var(--teal-dim)">
+        <div class="plan-feature"><span class="check">✓</span> 5 environments</div>
+        <div class="plan-feature"><span class="check">✓</span> Unlimited webhook alerts</div>
+        <div class="plan-feature"><span class="check">✓</span> Claude AI diagnosis</div>
+        <div class="plan-feature"><span class="check">✓</span> Slack #alerts posting</div>
+        <div class="plan-feature"><span class="check">✓</span> SEVERITY + DIAGNOSIS + FIX</div>
+        <div class="plan-feature"><span class="check">✓</span> 14-day free trial</div>
+        <div class="plan-feature"><span class="check">✓</span> Multi-agent architecture (v0.2)</div>
+        <div class="plan-feature"><span class="check">✓</span> Priority support</div>
+        <a href="#cta" class="btn btn-solid plan-cta">Start Free Trial</a>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text-dim);margin-top:24px;text-align:center;">
+      Need unlimited environments + self-hosted option + SLA? &nbsp;<a href="#cta" style="color:var(--teal);text-decoration:none;">Talk to us about Enterprise →</a>
+    </p>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="vision">
+  <div class="vision-inner">
+    <div class="section-label">// ROADMAP</div>
+    <h2>What it becomes.</h2>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-version active">v0.1</div>
+        <div class="tl-line-col"><div class="tl-dot active"></div><div class="tl-vline"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">Diagnose & Alert</div>
+          <div class="tl-desc">Webhook in. Claude diagnoses. Slack post with severity, root cause, and recommended fix. Already handling what takes humans 20 minutes — at 3am.</div>
+          <div class="tl-tags"><span class="tag live">LIVE NOW</span><span class="tag">Cloudflare Worker</span><span class="tag">Claude AI</span><span class="tag">Slack</span></div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-version">v0.2</div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-vline"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">Multi-Agent Architecture</div>
+          <div class="tl-desc">Four specialized agents running in parallel. Triage. Diagnosis. Audit. Comms. Faster, smarter, no single point of failure.</div>
+          <div class="tl-tags"><span class="tag">Triage Agent</span><span class="tag">Diagnosis Agent</span><span class="tag">Audit Agent</span><span class="tag">Comms Agent</span></div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-version">v1.0</div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-vline" style="min-height:0;height:0"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">Self-Healing Infrastructure</div>
+          <div class="tl-desc">Detects the anomaly. Writes the fix. Executes it. Rolls back if it fails. Logs everything. Your infrastructure restores itself while your team sleeps.</div>
+          <div class="tl-tags"><span class="tag">Auto-Remediation</span><span class="tag">Rollback Safety</span><span class="tag">Multi-Cloud</span><span class="tag">Audit Trail</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ANGLE -->
+<section id="angle">
+  <div class="section-label">// THE SHIFT</div>
+  <div class="big-quote">Every other tool<br><span class="cross">screams at you.</span><br>Agent9 <span class="teal">fixes it.</span></div>
+  <p class="quote-sub">PagerDuty wakes you up. Datadog charts the problem. OpsGenie routes the ticket. Nobody solves it. That's what we built Agent9 for.</p>
+  <div class="compare-grid">
+    <div class="compare-cell">
+      <div class="compare-label bad">// BEFORE AGENT9</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Alert fires at 2:47am</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Engineer gets paged</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> 20 minutes to diagnose</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Manual fix applied</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Post-mortem written days later</div>
+    </div>
+    <div class="compare-cell">
+      <div class="compare-label good">// WITH AGENT9</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Alert fires at 2:47am</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Agent9 receives it instantly</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Diagnosis in under 2 seconds</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Fix posted to Slack</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Audit trail auto-generated</div>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section id="cta">
+  <div class="cta-inner">
+    <div class="section-label" style="text-align:center">// GET STARTED</div>
+    <h2 style="text-align:center">14 days free.<br><span style="color:var(--teal)">No card required.</span></h2>
+    <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-top:12px;">Early access. You control the API key. Flat monthly rate. Cancel anytime.</p>
+    <div class="form-card">
+      <div id="form-wrap">
+        <div class="form-row">
+          <div>
+            <label class="field-label">YOUR NAME</label>
+            <input class="field-input" type="text" id="f-name" placeholder="John Smith">
+          </div>
+          <div>
+            <label class="field-label">WORK EMAIL</label>
+            <input class="field-input" type="email" id="f-email" placeholder="cto@yourcompany.com">
+          </div>
+          <div>
+            <label class="field-label">COMPANY</label>
+            <input class="field-input" type="text" id="f-company" placeholder="Acme Corp">
+          </div>
+          <div>
+            <label class="field-label">PLAN INTEREST</label>
+            <select class="field-select" id="f-plan">
+              <option value="">Select a plan...</option>
+              <option value="Starter — $79/mo">Starter — $79/mo</option>
+              <option value="Starter Annual — $69/mo">Starter Annual — $69/mo</option>
+              <option value="Pro — $299/mo">Pro — $299/mo</option>
+              <option value="Pro Annual — $249/mo">Pro Annual — $249/mo</option>
+              <option value="Enterprise — Custom">Enterprise — Custom</option>
+              <option value="Just exploring">Just exploring</option>
+            </select>
+          </div>
+        </div>
+        <button class="submit-btn" id="submit-btn" onclick="submitForm()">REQUEST EARLY ACCESS →</button>
+        <p class="form-note">
+          Reply within 24 hours. Weekly updates every Thursday.<br>
+          No spam. Unsubscribe anytime.
+        </p>
+      </div>
+      <div class="success-msg" id="success-msg">
+        <div class="success-icon">// ACK</div>
+        <p class="success-text">
+          You're in the queue.<br><br>
+          Expect an email within 24 hours.<br>
+          Every Thursday — what shipped, what's next, what we learned.<br><br>
+          <span style="color:var(--teal)">Agent9 is already watching.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="logo" style="font-size:14px">FIX<span style="color:var(--teal)">IT</span>AGENT <span style="color:var(--text-dim);font-family:'IBM Plex Mono';font-weight:300;font-size:12px">// Agent9 v0.1</span></div>
+  <div>fixitagent.ai &nbsp;·&nbsp; Built on Cloudflare &nbsp;·&nbsp; Powered by Claude</div>
+</footer>
+
+<script>
+const lines = [
+  { tag: '[ALERT]',     cls: 't-alert', val: 'CPU spike detected — 98% on prod-server-3' },
+  { tag: '[AGENT9]',    cls: 't-agent', val: 'Receiving webhook payload...' },
+  { tag: '[AGENT9]',    cls: 't-agent', val: 'Sending to Claude for analysis...' },
+  { tag: '[SEVERITY]',  cls: 't-info',  val: 'HIGH' },
+  { tag: '[DIAGNOSIS]', cls: 't-agent', val: 'Memory leak in Java service — PID 4821' },
+  { tag: '[ROOT CAUSE]',cls: 't-agent', val: 'Unclosed DB connections in OrderService.java' },
+  { tag: '[FIX]',       cls: 't-info',  val: 'Restart service + capture heap dump (jmap)' },
+  { tag: '[SLACK]',     cls: 't-ok',    val: 'Report posted to #alerts ✓' },
+  { tag: '[TIME]',      cls: 't-dim-l', val: 'Total elapsed: 1.84s' },
+];
+const output = document.getElementById('terminal-output');
+let idx = 0;
+function addLine() {
+  if (idx >= lines.length) {
+    setTimeout(() => { output.innerHTML = ''; idx = 0; setTimeout(addLine, 600); }, 4000);
+    return;
+  }
+  const l = lines[idx];
+  const div = document.createElement('div');
+  div.className = 't-line';
+  div.innerHTML = `<span class="t-tag ${l.cls}">${l.tag}</span><span class="t-val">${l.val}</span>`;
+  div.style.opacity = '0'; div.style.transition = 'opacity 0.3s';
+  output.appendChild(div);
+  requestAnimationFrame(() => { div.style.opacity = '1'; });
+  const cur = document.createElement('div');
+  cur.className = 't-line'; cur.id = 'cur';
+  cur.innerHTML = '<span class="cursor"></span>';
+  output.appendChild(cur);
+  idx++;
+  setTimeout(() => { const c = document.getElementById('cur'); if(c) c.remove(); setTimeout(addLine, 320); }, 480);
+}
+setTimeout(addLine, 1400);
+
+function setBilling(type) {
+  const a = type === 'annual';
+  document.getElementById('btn-monthly').classList.toggle('active', !a);
+  document.getElementById('btn-annual').classList.toggle('active', a);
+  document.getElementById('save-badge').style.display = a ? 'inline-block' : 'none';
+  document.getElementById('starter-price').textContent = a ? '69' : '79';
+  document.getElementById('pro-price').textContent = a ? '249' : '299';
+  document.getElementById('starter-annual').innerHTML = a ? '<span class="highlight">Billed $828/yr — save $120</span>' : '&nbsp;';
+  document.getElementById('pro-annual').innerHTML = a ? '<span class="highlight">Billed $2,988/yr — save $600</span>' : '&nbsp;';
+}
+
+async function submitForm() {
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const co    = document.getElementById('f-company').value.trim();
+  const plan  = document.getElementById('f-plan').value;
+  if (!name || !email) { alert('Name and email are required.'); return; }
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = 'SENDING...'; btn.disabled = true;
+  try {
+    const res = await fetch('https://formspree.io/f/mojpvdlp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ name, email, company: co, plan })
+    });
+    if (res.ok) {
+      document.getElementById('form-wrap').style.display = 'none';
+      document.getElementById('success-msg').classList.add('show');
+    } else {
+      btn.textContent = 'REQUEST EARLY ACCESS →'; btn.disabled = false;
+      alert('Something went wrong. Please try again.');
+    }
+  } catch(e) {
+    btn.textContent = 'REQUEST EARLY ACCESS →'; btn.disabled = false;
+    alert('Network error. Please try again.');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,8 +1,7 @@
-const ANTHROPIC_API_KEY = "YOUR_ANTHROPIC_API_KEY";
-const SLACK_WEBHOOK_URL = "YOUR_SLACK_WEBHOOK_URL";
-
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
+    const ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
+    const SLACK_WEBHOOK_URL = env.SLACK_WEBHOOK_URL;
     if (request.method !== "POST") {
       return new Response("Agent9 is live.", { status: 200 });
     }

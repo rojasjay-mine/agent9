@@ -8,8 +8,7 @@
   },
   "assets": {
     "directory": ".",
-    "run_worker_first": ["/api"],
-    "not_found_handling": "404-page"
+    "binding": "ASSETS"
   },
   "compatibility_flags": [
     "nodejs_compat"

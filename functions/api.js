@@ -40,11 +40,40 @@ function App() {
   const [messages, setMessages] = useState(loadHistory);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [memoryStatus, setMemoryStatus] = useState("");
   const bottomRef = useRef(null);
   const current = messages[activeAgent.id] || [];
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [current, loading]);
+
+  // Fetch memory from server on mount and merge with localStorage
+  useEffect(() => {
+    fetch("/memory")
+      .then(r => r.ok ? r.json() : null)
+      .then(serverData => {
+        if (serverData && Object.keys(serverData).length > 0) {
+          setMessages(prev => {
+            const merged = { ...serverData, ...prev };
+            saveHistory(merged);
+            return merged;
+          });
+          setMemoryStatus("SYNCED");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const updateMessages = (id, msgs) => {
-    setMessages(prev => { const next = { ...prev, [id]: msgs }; saveHistory(next); return next; });
+    setMessages(prev => {
+      const next = { ...prev, [id]: msgs };
+      saveHistory(next);
+      // Persist to server memory
+      fetch("/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      }).catch(() => {});
+      return next;
+    });
   };
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -81,6 +110,7 @@ function App() {
         <span style={{ color: "#222" }}>|</span>
         <span style={{ fontSize: "11px", color: activeAgent.color, letterSpacing: "2px" }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
+          {memoryStatus && <span style={{ fontSize: "9px", color: "#1a3a1a", letterSpacing: "1px" }}>MEM:{memoryStatus}</span>}
           <span style={{ fontSize: "9px", color: "#1f3a1f", letterSpacing: "1px" }}>SAVED</span>
           <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid #1a1a1a", borderRadius: "3px", padding: "3px 8px", color: "#333", fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
         </div>
@@ -131,6 +161,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </body>
 </html>`;
 
+const MEMORY_KEY = "fx-agents-memory";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -141,17 +173,56 @@ export default {
       });
     }
 
+    // GET /memory — fetch stored conversation history from KV
+    if (url.pathname === "/memory" && request.method === "GET") {
+      if (!env.MEMORY) {
+        return new Response(JSON.stringify({}), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      const stored = await env.MEMORY.get(MEMORY_KEY);
+      return new Response(stored || "{}", {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // POST /memory — save conversation history to KV
+    if (url.pathname === "/memory" && request.method === "POST") {
+      if (!env.MEMORY) {
+        return new Response("KV not configured", { status: 503 });
+      }
+      let body;
+      try {
+        body = await request.text();
+        JSON.parse(body); // validate JSON
+      } catch {
+        return new Response("Invalid JSON", { status: 400 });
+      }
+      await env.MEMORY.put(MEMORY_KEY, body);
+      return new Response("OK", { status: 200 });
+    }
+
+    // POST /api — proxy to Claude API
     if (url.pathname === "/api" || url.pathname === "/api/") {
       if (request.method !== "POST") {
         return new Response("Method not allowed", { status: 405 });
       }
-      let alert;
+      let body;
       try {
-        alert = await request.json();
+        body = await request.json();
       } catch {
         return new Response("Invalid JSON", { status: 400 });
       }
-      const alertText = alert.message || JSON.stringify(alert);
+
+      const { model, max_tokens, system, messages } = body;
+
+      const claudePayload = {
+        model: model || "claude-sonnet-4-20250514",
+        max_tokens: max_tokens || 1000,
+        messages: messages || [],
+      };
+      if (system) claudePayload.system = system;
+
       const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -159,22 +230,14 @@ export default {
           "x-api-key": env.ANTHROPIC_API_KEY,
           "anthropic-version": "2023-06-01"
         },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: `You are Agent9. Analyze this alert and respond with SEVERITY, DIAGNOSIS, and RECOMMENDED FIX:\n${alertText}` }]
-        })
+        body: JSON.stringify(claudePayload)
       });
+
       const claudeData = await claudeResponse.json();
-      const diagnosis = claudeData.content?.[0]?.text || "No diagnosis.";
-      await fetch(env.SLACK_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: `*🚨 Agent9 Alert*\n\n*Alert:*\n${alertText}\n\n*Diagnosis:*\n${diagnosis}`
-        })
+      return new Response(JSON.stringify(claudeData), {
+        status: claudeResponse.status,
+        headers: { "Content-Type": "application/json" }
       });
-      return new Response("Done.", { status: 200 });
     }
 
     return env.ASSETS.fetch(request);

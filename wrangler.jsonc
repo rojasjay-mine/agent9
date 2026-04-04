@@ -6,6 +6,10 @@
   "observability": {
     "enabled": true
   },
+  "routes": [
+    { "pattern": "fixitagent.ai/*", "zone_name": "fixitagent.ai" },
+    { "pattern": "www.fixitagent.ai/*", "zone_name": "fixitagent.ai" }
+  ],
   "assets": {
     "directory": "./",
     "binding": "ASSETS"

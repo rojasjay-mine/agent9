@@ -131,52 +131,163 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </body>
 </html>`;
 
+// ── Security helpers ──────────────────────────────────────────────────────────
+
+const SEC_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "X-XSS-Protection": "1; mode=block",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+};
+
+const BLOCKED_PATTERNS = [
+  "IntrospectionQuery", "__schema", "__typename",
+  "SELECT ", "UNION ", "DROP ", "INSERT ", "UPDATE ", "DELETE ",
+  "<script", "javascript:", "../", "/etc/passwd", "eval(",
+  "document.cookie", "window.location", "XMLHttpRequest",
+];
+
+function blocked(msg = "Forbidden", status = 403) {
+  return new Response(msg, { status, headers: SEC_HEADERS });
+}
+
+function isMalicious(text) {
+  const upper = text.toUpperCase();
+  return BLOCKED_PATTERNS.some(p => upper.includes(p.toUpperCase()));
+}
+
+// In-memory rate limiter (per Worker instance — resets on cold start)
+const rateLimitMap = new Map();
+function isRateLimited(ip, max = 20, windowMs = 60_000) {
+  const now = Date.now();
+  const rec = rateLimitMap.get(ip) || { count: 0, resetAt: now + windowMs };
+  if (now > rec.resetAt) { rec.count = 0; rec.resetAt = now + windowMs; }
+  rec.count++;
+  rateLimitMap.set(ip, rec);
+  if (rateLimitMap.size > 2000) {
+    for (const [k, v] of rateLimitMap) { if (now > v.resetAt) rateLimitMap.delete(k); }
+  }
+  return rec.count > max;
+}
+
+// ── Worker ────────────────────────────────────────────────────────────────────
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-    if (url.pathname === "/agents" || url.pathname === "/agents/") {
-      return new Response(AGENTS_HTML, {
-        headers: { "Content-Type": "text/html;charset=UTF-8" }
+    // Block non-standard HTTP methods globally
+    if (!["GET", "POST", "HEAD", "OPTIONS"].includes(request.method)) {
+      return blocked("Method not allowed", 405);
+    }
+
+    // CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "https://fixitagent.ai",
+          "Access-Control-Allow-Methods": "POST",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
       });
     }
 
+    // ── /agents ──────────────────────────────────────────────────────────────
+    if (url.pathname === "/agents" || url.pathname === "/agents/") {
+      return new Response(AGENTS_HTML, {
+        headers: { "Content-Type": "text/html;charset=UTF-8", ...SEC_HEADERS },
+      });
+    }
+
+    // ── /api ─────────────────────────────────────────────────────────────────
     if (url.pathname === "/api" || url.pathname === "/api/") {
-      if (request.method !== "POST") {
-        return new Response("Method not allowed", { status: 405 });
-      }
-      let alert;
+      if (request.method !== "POST") return blocked("Method not allowed", 405);
+
+      // Rate limit
+      if (isRateLimited(ip)) return blocked("Too many requests", 429);
+
+      // Content-Type must be JSON
+      const ct = request.headers.get("Content-Type") || "";
+      if (!ct.includes("application/json")) return blocked("Invalid content type", 415);
+
+      // Body size limit: 50 KB
+      let rawBody;
       try {
-        alert = await request.json();
+        rawBody = await request.text();
       } catch {
-        return new Response("Invalid JSON", { status: 400 });
+        return blocked("Bad request", 400);
       }
-      const alertText = alert.message || JSON.stringify(alert);
-      const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      if (rawBody.length > 50_000) return blocked("Payload too large", 413);
+
+      // Block malicious patterns before parsing
+      if (isMalicious(rawBody)) return blocked("Forbidden", 403);
+
+      let body;
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        return blocked("Invalid JSON", 400);
+      }
+
+      // ── SPA chat proxy (body has messages array) ──────────────────────────
+      if (Array.isArray(body.messages)) {
+        const origin = request.headers.get("Origin") || "";
+        const allowed = ["fixitagent.ai", "workers.dev", "localhost"];
+        if (!allowed.some(o => origin.includes(o))) return blocked("Unauthorized origin", 403);
+
+        const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify(body),
+        });
+        const claudeData = await claudeRes.json();
+        return new Response(JSON.stringify(claudeData), {
+          headers: { "Content-Type": "application/json", ...SEC_HEADERS },
+        });
+      }
+
+      // ── Webhook alert (requires API secret token) ─────────────────────────
+      const authHeader = request.headers.get("Authorization") || "";
+      const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+      if (!env.API_SECRET || token !== env.API_SECRET) return blocked("Unauthorized", 401);
+
+      const alertText = body.message || JSON.stringify(body);
+      if (isMalicious(alertText)) return blocked("Forbidden", 403);
+
+      const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01"
+          "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
-          messages: [{ role: "user", content: `You are Agent9. Analyze this alert and respond with SEVERITY, DIAGNOSIS, and RECOMMENDED FIX:\n${alertText}` }]
-        })
+          messages: [{ role: "user", content: `You are Agent9. Analyze this alert and respond with SEVERITY, DIAGNOSIS, and RECOMMENDED FIX:\n${alertText}` }],
+        }),
       });
-      const claudeData = await claudeResponse.json();
+      const claudeData = await claudeRes.json();
       const diagnosis = claudeData.content?.[0]?.text || "No diagnosis.";
+
       await fetch(env.SLACK_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: `*🚨 Agent9 Alert*\n\n*Alert:*\n${alertText}\n\n*Diagnosis:*\n${diagnosis}`
-        })
+          text: `*🚨 Agent9 Alert*\n\n*Alert:*\n${alertText}\n\n*Diagnosis:*\n${diagnosis}`,
+        }),
       });
-      return new Response("Done.", { status: 200 });
+
+      return new Response("Done.", { status: 200, headers: SEC_HEADERS });
     }
 
     return env.ASSETS.fetch(request);
-  }
+  },
 };

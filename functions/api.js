@@ -310,19 +310,29 @@ export default {
       let event;
       try { event = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
 
+      let slackMsg = null;
+
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
         const email = session.customer_details?.email || "unknown";
         const amount = session.amount_subtotal ? `$${(session.amount_subtotal / 100).toFixed(0)}` : "";
-        if (env.SLACK_WEBHOOK_URL) {
-          await fetch(env.SLACK_WEBHOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              text: `🎉 *New Agent9 Subscriber!*\n*Email:* ${email}\n*Amount:* ${amount}/mo\n*Trial ends:* 14 days\n*Session:* ${session.id}`
-            }),
-          }).catch(() => {});
-        }
+        slackMsg = `🎉 *New Agent9 Subscriber!*\n*Email:* ${email}\n*Amount:* ${amount}/mo\n*Trial:* 14 days free`;
+      } else if (event.type === "customer.subscription.deleted") {
+        const sub = event.data.object;
+        slackMsg = `❌ *Subscription Cancelled*\n*Customer:* ${sub.customer}\n*Plan:* ${sub.items?.data?.[0]?.price?.id || "unknown"}\n*Ended:* ${new Date(sub.ended_at * 1000).toISOString().slice(0,10)}`;
+      } else if (event.type === "invoice.payment_failed") {
+        const inv = event.data.object;
+        const email = inv.customer_email || inv.customer || "unknown";
+        const amount = inv.amount_due ? `$${(inv.amount_due / 100).toFixed(2)}` : "";
+        slackMsg = `⚠️ *Payment Failed*\n*Email:* ${email}\n*Amount:* ${amount}\n*Attempt:* ${inv.attempt_count}`;
+      }
+
+      if (slackMsg && env.SLACK_WEBHOOK_URL) {
+        await fetch(env.SLACK_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: slackMsg }),
+        }).catch(() => {});
       }
 
       return new Response("OK", { status: 200 });

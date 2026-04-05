@@ -163,6 +163,30 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 const MEMORY_KEY = "fx-agents-memory";
 
+const PRICES = {
+  "starter-monthly": "price_1TIJEiGVEPbuDOhcpbg0sLcH",
+  "starter-annual":  "price_1TIx1lGVEPbuDOhcbDPb0lj9",
+  "pro-monthly":     "price_1TIx1lGVEPbuDOhcFhdIyEQO",
+  "pro-annual":      "price_1TIx1mGVEPbuDOhc9cjxLnec",
+};
+
+async function verifyStripeSignature(body, sigHeader, secret) {
+  const parts = sigHeader.split(",").reduce((acc, p) => {
+    const [k, v] = p.split("="); acc[k] = v; return acc;
+  }, {});
+  const timestamp = parts.t;
+  const sig = parts.v1;
+  if (!timestamp || !sig) return false;
+  if (Math.abs(Math.floor(Date.now() / 1000) - parseInt(timestamp)) > 300) return false;
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const raw = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+  const computed = Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return computed === sig;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -238,6 +262,70 @@ export default {
         status: claudeResponse.status,
         headers: { "Content-Type": "application/json" }
       });
+    }
+
+    // POST /checkout — create Stripe Checkout Session
+    if (url.pathname === "/checkout" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      const { plan = "starter", billing = "monthly" } = body;
+      const priceId = PRICES[`${plan}-${billing}`];
+      if (!priceId) return new Response("Invalid plan", { status: 400 });
+      if (!env.STRIPE_SECRET_KEY) return new Response("Stripe not configured", { status: 503 });
+
+      const params = new URLSearchParams({
+        mode: "subscription",
+        "line_items[0][price]": priceId,
+        "line_items[0][quantity]": "1",
+        "subscription_data[trial_period_days]": "14",
+        success_url: "https://fixitagent.ai/?subscribed=true",
+        cancel_url: "https://fixitagent.ai/#pricing",
+      });
+
+      const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.STRIPE_SECRET_KEY}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params.toString(),
+      });
+      const session = await stripeRes.json();
+      if (!stripeRes.ok) return new Response(JSON.stringify(session), { status: stripeRes.status, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ url: session.url }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // POST /webhook — handle Stripe events
+    if (url.pathname === "/webhook" && request.method === "POST") {
+      const sig = request.headers.get("stripe-signature");
+      const rawBody = await request.text();
+
+      if (env.STRIPE_WEBHOOK_SECRET) {
+        const valid = await verifyStripeSignature(rawBody, sig || "", env.STRIPE_WEBHOOK_SECRET);
+        if (!valid) return new Response("Invalid signature", { status: 400 });
+      }
+
+      let event;
+      try { event = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        const email = session.customer_details?.email || "unknown";
+        const amount = session.amount_subtotal ? `$${(session.amount_subtotal / 100).toFixed(0)}` : "";
+        if (env.SLACK_WEBHOOK_URL) {
+          await fetch(env.SLACK_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: `🎉 *New Agent9 Subscriber!*\n*Email:* ${email}\n*Amount:* ${amount}/mo\n*Trial ends:* 14 days\n*Session:* ${session.id}`
+            }),
+          }).catch(() => {});
+        }
+      }
+
+      return new Response("OK", { status: 200 });
     }
 
     return env.ASSETS.fetch(request);

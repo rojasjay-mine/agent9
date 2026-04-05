@@ -22,6 +22,19 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 ## Dev branch
 `claude/catch-up-cXBUt` — push here, never to main without permission
 
+## Stripe integration (added this session)
+- Product: `prod_UGqw8ZLonlFJmS` (agent9)
+- Prices:
+  - Starter monthly $79: `price_1TIJEiGVEPbuDOhcpbg0sLcH`
+  - Starter annual $828: `price_1TIx1lGVEPbuDOhcbDPb0lj9`
+  - Pro monthly $299: `price_1TIx1lGVEPbuDOhcFhdIyEQO`
+  - Pro annual $2988: `price_1TIx1mGVEPbuDOhc9cjxLnec`
+- Endpoints: `POST /checkout` (creates Checkout Session), `POST /webhook` (handles events)
+- Webhook events: `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed`
+- Webhook URL: `https://fixitagent.ai/webhook`
+- Required Cloudflare env vars (add as Secrets): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- Checkout has 14-day free trial, success redirects to `/?subscribed=true`
+
 ## Conventions
 - No build step — keep frontend as inline template literal in api.js
 - Model: `claude-sonnet-4-20250514`

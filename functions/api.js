@@ -338,6 +338,71 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
+    // POST / — infrastructure alert handler
+    if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/alert")) {
+      let alert;
+      try {
+        alert = await request.json();
+      } catch {
+        return new Response("Invalid JSON", { status: 400 });
+      }
+
+      // Filter junk: empty payloads and GraphQL scanner probes
+      const keys = Object.keys(alert);
+      if (keys.length === 0) return new Response("OK", { status: 200 });
+      if (alert.query && typeof alert.query === "string" && alert.query.includes("__schema")) {
+        return new Response("OK", { status: 200 });
+      }
+
+      const alertText = alert.message || alert.text || alert.description || JSON.stringify(alert);
+
+      // Claude diagnosis
+      let diagnosis = "No diagnosis available.";
+      if (env.ANTHROPIC_API_KEY) {
+        try {
+          const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": env.ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 1000,
+              messages: [{
+                role: "user",
+                content: `You are Agent9, an elite infrastructure remediation AI. Analyze this alert, diagnose the root cause, and provide a clear fix.
+
+Alert:
+${alertText}
+
+Respond in this format:
+SEVERITY: [LOW / MEDIUM / CRITICAL]
+DIAGNOSIS: (what is wrong and why)
+RECOMMENDED FIX: (exact steps to resolve)`,
+              }],
+            }),
+          });
+          const claudeData = await claudeRes.json();
+          diagnosis = claudeData.content?.[0]?.text || diagnosis;
+        } catch {}
+      }
+
+      // Post to Slack
+      if (env.SLACK_WEBHOOK_URL) {
+        await fetch(env.SLACK_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `🚨 *Agent9 Alert*\n\n*Alert:*\n${alertText}\n\n*Diagnosis:*\n${diagnosis}`,
+          }),
+        }).catch(() => {});
+      }
+
+      return new Response("OK", { status: 200 });
+    }
+
     return env.ASSETS.fetch(request);
   }
 };

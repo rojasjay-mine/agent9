@@ -167,7 +167,16 @@ const PRICES = {
   "pro-annual":      "price_1TIx1mGVEPbuDOhc9cjxLnec",
 };
 
-async function verifyStripeSignature(body, sigHeader, secret) {
+async function alertSecurityBreach(env, type, details) {
+  if (!env.SLACK_WEBHOOK_URL) return;
+  await fetch(env.SLACK_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: `🚨 *SECURITY ALERT — ${type}*\n${details}\n<!channel>`
+    }),
+  }).catch(() => {});
+}
   const parts = sigHeader.split(",").reduce((acc, p) => {
     const [k, v] = p.split("="); acc[k] = v; return acc;
   }, {});
@@ -196,11 +205,17 @@ const SECURITY_HEADERS = {
 const rateLimitMap = new Map();
 function isRateLimited(ip, limit = 30, windowMs = 60000) {
   const now = Date.now();
-  const entry = rateLimitMap.get(ip) || { count: 0, start: now };
-  if (now - entry.start > windowMs) { entry.count = 0; entry.start = now; }
+  const entry = rateLimitMap.get(ip) || { count: 0, start: now, alerted: false };
+  if (now - entry.start > windowMs) { entry.count = 0; entry.start = now; entry.alerted = false; }
   entry.count++;
   rateLimitMap.set(ip, entry);
-  return entry.count > limit;
+  // Return {limited, firstHit} so we only alert once per window
+  if (entry.count > limit) {
+    const firstHit = !entry.alerted;
+    entry.alerted = true;
+    return { limited: true, firstHit };
+  }
+  return { limited: false, firstHit: false };
 }
 
 export default {
@@ -242,13 +257,16 @@ export default {
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
     // Rate limit: 30 requests/min per IP (skip for Stripe webhooks)
-    if (url.pathname !== "/webhook" && isRateLimited(ip)) {
+    const { limited, firstHit } = url.pathname !== "/webhook" ? isRateLimited(ip) : { limited: false, firstHit: false };
+    if (limited) {
+      if (firstHit) await alertSecurityBreach(env, "RATE LIMIT EXCEEDED", `IP: ${ip}\nPath: ${url.pathname}\nMethod: ${request.method}`);
       return new Response("Too many requests", { status: 429, headers: SECURITY_HEADERS });
     }
 
     // Block oversized request bodies (max 1MB)
     const contentLength = parseInt(request.headers.get("Content-Length") || "0");
     if (contentLength > 1_000_000) {
+      await alertSecurityBreach(env, "OVERSIZED PAYLOAD", `IP: ${ip}\nPath: ${url.pathname}\nSize: ${contentLength} bytes`);
       return new Response("Payload too large", { status: 413, headers: SECURITY_HEADERS });
     }
 
@@ -306,6 +324,7 @@ export default {
       }
       // Auth check — only allow requests from fixitagent.ai
       if (!fromSite) {
+        await alertSecurityBreach(env, "UNAUTHORIZED /api ACCESS", `IP: ${ip}\nOrigin: ${origin || "none"}\nReferer: ${referer || "none"}`);
         return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
       }
       let body;
@@ -381,7 +400,10 @@ export default {
 
       if (env.STRIPE_WEBHOOK_SECRET) {
         const valid = await verifyStripeSignature(rawBody, sig || "", env.STRIPE_WEBHOOK_SECRET);
-        if (!valid) return new Response("Invalid signature", { status: 400 });
+        if (!valid) {
+        await alertSecurityBreach(env, "INVALID STRIPE SIGNATURE", `IP: ${ip}\nPossible webhook forgery attempt`);
+        return new Response("Invalid signature", { status: 400 });
+      }
       }
 
       let event;

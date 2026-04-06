@@ -13,7 +13,7 @@ A Cloudflare Worker serving a React-based AI agent chat UI at fixitagent.ai. Pro
 
 ## Key files
 - `functions/api.js` — entire backend + embedded frontend HTML
-- `wrangler.jsonc` — Worker config, KV namespace, routes
+- `wrangler.jsonc` — Worker config, KV namespace, routes, cron
 - `index.html`, `agents.html`, `public/` — static assets
 
 ## Agents (10 total)
@@ -34,8 +34,35 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 - Webhook URL: `https://fixitagent.ai/webhook`
 - Required Cloudflare env vars (add as Secrets): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - Checkout has 14-day free trial, success redirects to `/?subscribed=true`
+- Stripe account verification (business details) still pending — needed for payouts
+
+## Security (all live)
+- Origin check on `/api` and `/memory` — only fixitagent.ai allowed
+- Rate limit: 30 req/min per IP, Stripe webhook exempt
+- 1MB request body size cap
+- Security headers on all responses (XSS, iframe, MIME sniffing)
+- GraphQL scanner probe filter on `/alert`
+- Stripe webhook signature verification
+- Real-time Slack @channel alerts on: rate limit exceeded, unauthorized /api access, oversized payload, invalid Stripe signature
+
+## Monitoring
+- Hourly cron (`0 * * * *`) posts health check to Slack #alerts
+- Health check covers: worker online, KV status, active subscriber count, Stripe configured
+- Slack #alerts channel ID: C0ANQCB103Y
+- Slack #revenue- channel ID: C0ANL2EKSJX
+
+## Cloudflare env vars needed
+- `ANTHROPIC_API_KEY` — Claude API key
+- `STRIPE_SECRET_KEY` — sk_live_...
+- `STRIPE_WEBHOOK_SECRET` — whsec_bAPLGxBo2XEQ8dJOVYBTFxopxVvtWaoR
+- `SLACK_WEBHOOK_URL` — Slack incoming webhook
 
 ## Conventions
 - No build step — keep frontend as inline template literal in api.js
 - Model: `claude-sonnet-4-20250514`
 - KV key for memory: `fx-agents-memory`
+- Memory: server (KV) is source of truth, localStorage is cache only
+
+## Current goal
+First paying customer at $79/mo. Site is live, Stripe is wired, security is locked down.
+

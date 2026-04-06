@@ -22,7 +22,7 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 ## Dev branch
 `claude/catch-up-cXBUt` — push here, never to main without permission
 
-## Stripe integration (added this session)
+## Stripe integration
 - Product: `prod_UGqw8ZLonlFJmS` (agent9)
 - Prices:
   - Starter monthly $79: `price_1TIJEiGVEPbuDOhcpbg0sLcH`

@@ -187,13 +187,38 @@ async function verifyStripeSignature(body, sigHeader, secret) {
   return computed === sig;
 }
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "X-XSS-Protection": "1; mode=block",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+};
+
+// Simple in-memory rate limiter (per IP, resets on worker restart)
+const rateLimitMap = new Map();
+function isRateLimited(ip, limit = 30, windowMs = 60000) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip) || { count: 0, start: now };
+  if (now - entry.start > windowMs) { entry.count = 0; entry.start = now; }
+  entry.count++;
+  rateLimitMap.set(ip, entry);
+  return entry.count > limit;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+
+    // Rate limit: 30 requests/min per IP (skip for Stripe webhooks)
+    if (url.pathname !== "/webhook" && isRateLimited(ip)) {
+      return new Response("Too many requests", { status: 429, headers: SECURITY_HEADERS });
+    }
 
     if (url.pathname === "/agents" || url.pathname === "/agents/") {
       return new Response(AGENTS_HTML, {
-        headers: { "Content-Type": "text/html;charset=UTF-8" }
+        headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
       });
     }
 

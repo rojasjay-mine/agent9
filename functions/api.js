@@ -204,6 +204,39 @@ function isRateLimited(ip, limit = 30, windowMs = 60000) {
 }
 
 export default {
+  async scheduled(event, env) {
+    const now = new Date().toUTCString();
+    let kvStatus = "✓";
+    let subCount = 0;
+
+    try {
+      await env.MEMORY.get("fx-agents-memory");
+    } catch {
+      kvStatus = "✗ KV ERROR";
+    }
+
+    // Check active subscriptions via Stripe
+    if (env.STRIPE_SECRET_KEY) {
+      try {
+        const res = await fetch("https://api.stripe.com/v1/subscriptions?status=active&limit=100", {
+          headers: { "Authorization": `Bearer ${env.STRIPE_SECRET_KEY}` }
+        });
+        const data = await res.json();
+        subCount = data.data?.length || 0;
+      } catch {}
+    }
+
+    if (env.SLACK_WEBHOOK_URL) {
+      await fetch(env.SLACK_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: `🟢 *Agent9 Hourly Status*\n*Time:* ${now}\n*Worker:* ✓ Online\n*KV Memory:* ${kvStatus}\n*Active Subscribers:* ${subCount}\n*Stripe:* ${env.STRIPE_SECRET_KEY ? "✓ Configured" : "✗ Missing key"}`
+        })
+      }).catch(() => {});
+    }
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";

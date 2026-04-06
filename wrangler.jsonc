@@ -19,5 +19,8 @@
   ],
   "kv_namespaces": [
     { "binding": "MEMORY", "id": "ba902d31d72444d9aae25bbb24a269e1" }
-  ]
+  ],
+  "triggers": {
+    "crons": ["0 * * * *"]
+  }
 }

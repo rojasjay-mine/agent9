@@ -246,6 +246,18 @@ export default {
       return new Response("Too many requests", { status: 429, headers: SECURITY_HEADERS });
     }
 
+    // Block oversized request bodies (max 1MB)
+    const contentLength = parseInt(request.headers.get("Content-Length") || "0");
+    if (contentLength > 1_000_000) {
+      return new Response("Payload too large", { status: 413, headers: SECURITY_HEADERS });
+    }
+
+    // Origin check helper — only fixitagent.ai allowed for sensitive endpoints
+    const origin = request.headers.get("Origin") || "";
+    const referer = request.headers.get("Referer") || "";
+    const ALLOWED = ["https://fixitagent.ai", "https://www.fixitagent.ai"];
+    const fromSite = ALLOWED.some(a => origin.startsWith(a) || referer.startsWith(a));
+
     if (url.pathname === "/agents" || url.pathname === "/agents/") {
       return new Response(AGENTS_HTML, {
         headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
@@ -253,6 +265,9 @@ export default {
     }
 
     // GET /memory — fetch stored conversation history from KV
+    if (url.pathname === "/memory" && request.method === "GET" && !fromSite) {
+      return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
+    }
     if (url.pathname === "/memory" && request.method === "GET") {
       if (!env.MEMORY) {
         return new Response(JSON.stringify({}), {
@@ -266,6 +281,9 @@ export default {
     }
 
     // POST /memory — save conversation history to KV
+    if (url.pathname === "/memory" && request.method === "POST" && !fromSite) {
+      return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
+    }
     if (url.pathname === "/memory" && request.method === "POST") {
       if (!env.MEMORY) {
         return new Response("KV not configured", { status: 503 });
@@ -287,12 +305,8 @@ export default {
         return new Response("Method not allowed", { status: 405 });
       }
       // Auth check — only allow requests from fixitagent.ai
-      const origin = request.headers.get("Origin") || "";
-      const referer = request.headers.get("Referer") || "";
-      const allowed = ["https://fixitagent.ai", "https://www.fixitagent.ai"];
-      const originOk = allowed.some(a => origin.startsWith(a) || referer.startsWith(a));
-      if (!originOk) {
-        return new Response("Unauthorized", { status: 401 });
+      if (!fromSite) {
+        return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
       }
       let body;
       try {
@@ -401,7 +415,7 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
-    // POST / — infrastructure alert handler
+    // POST / — infrastructure alert handler (no origin check — external monitoring tools send alerts)
     if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/alert")) {
       let alert;
       try {

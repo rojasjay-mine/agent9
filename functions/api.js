@@ -286,6 +286,14 @@ export default {
       if (request.method !== "POST") {
         return new Response("Method not allowed", { status: 405 });
       }
+      // Auth check — only allow requests from fixitagent.ai
+      const origin = request.headers.get("Origin") || "";
+      const referer = request.headers.get("Referer") || "";
+      const allowed = ["https://fixitagent.ai", "https://www.fixitagent.ai"];
+      const originOk = allowed.some(a => origin.startsWith(a) || referer.startsWith(a));
+      if (!originOk) {
+        return new Response("Unauthorized", { status: 401 });
+      }
       let body;
       try {
         body = await request.json();

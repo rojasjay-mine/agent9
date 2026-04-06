@@ -45,17 +45,14 @@ function App() {
   const current = messages[activeAgent.id] || [];
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [current, loading]);
 
-  // Fetch memory from server on mount and merge with localStorage
+  // Fetch memory from server on mount — server is source of truth
   useEffect(() => {
     fetch("/memory")
       .then(r => r.ok ? r.json() : null)
       .then(serverData => {
         if (serverData && Object.keys(serverData).length > 0) {
-          setMessages(prev => {
-            const merged = { ...serverData, ...prev };
-            saveHistory(merged);
-            return merged;
-          });
+          setMessages(serverData);
+          saveHistory(serverData);
           setMemoryStatus("SYNCED");
         }
       })

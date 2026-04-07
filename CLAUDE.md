@@ -38,6 +38,15 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 - Checkout has 14-day free trial, success redirects to `/?subscribed=true`
 - Stripe account verification (business details) still pending — needed for payouts
 
+## Auth flow
+- After checkout → `/verify-checkout?cs={CHECKOUT_SESSION_ID}` → stores `subscriber:{email}` in KV, sets `fx_auth` cookie (HMAC-SHA256 signed), redirects to `/agents`
+- `/agents` gated: verifies cookie + checks `subscriber:{email}` status = "active" in KV
+- `/login` — email form, checks KV, sets cookie
+- `/logout` — clears cookie
+- Memory scoped per user: KV key `memory:{email}`
+- Cookie: HttpOnly, Secure, SameSite=Strict, 30-day expiry
+- Signing secret: `STRIPE_WEBHOOK_SECRET` env var
+
 ## Security (all live)
 - Origin check on `/api` and `/memory` — only fixitagent.ai allowed
 - Rate limit: 30 req/min per IP, Stripe webhook exempt

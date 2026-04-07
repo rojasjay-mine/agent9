@@ -25,6 +25,8 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 ## Stripe integration
 - Product: `prod_UGqw8ZLonlFJmS` (agent9)
 - Prices:
+  - Solo monthly $29: `price_1TJXeDGVEPbuDOhc59XQkMii`
+  - Solo annual $299: `price_1TJXeHGVEPbuDOhcHI7UNbXg`
   - Starter monthly $79: `price_1TIJEiGVEPbuDOhcpbg0sLcH`
   - Starter annual $828: `price_1TIx1lGVEPbuDOhcbDPb0lj9`
   - Pro monthly $299: `price_1TIx1lGVEPbuDOhcFhdIyEQO`

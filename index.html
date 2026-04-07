@@ -123,7 +123,7 @@
   .toggle-opt { padding: 8px 20px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; cursor: pointer; border: none; background: transparent; color: var(--text-dim); transition: all 0.2s; }
   .toggle-opt.active { background: var(--teal); color: var(--black); font-weight: 500; }
   .save-badge { font-size: 11px; padding: 4px 10px; border: 1px solid var(--amber); color: var(--amber); letter-spacing: 1px; }
-  .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+  .plans-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); }
   .plan-card { background: var(--black); padding: 40px 36px; position: relative; }
   .plan-card.featured { background: #0a1410; border: 1px solid var(--teal); margin: -1px; z-index: 1; }
   .plan-badge { position: absolute; top: -1px; right: 28px; font-size: 10px; padding: 5px 14px; background: var(--teal); color: var(--black); font-weight: 500; letter-spacing: 2px; }
@@ -202,7 +202,7 @@
     .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
     .flow-row { flex-direction: column; }
     .flow-arrow { transform: rotate(90deg); padding: 8px 0; width: 100%; text-align: center; }
-    .plans-grid { grid-template-columns: 1fr; }
+    .plans-grid { grid-template-columns: 1fr; gap: 0; }
     .plan-card.featured { margin: 0; }
     .tl-item { grid-template-columns: 70px 30px 1fr; }
     .compare-grid { grid-template-columns: 1fr; }
@@ -289,6 +289,20 @@
       <span class="save-badge" id="save-badge" style="display:none">SAVE UP TO $600/YR</span>
     </div>
     <div class="plans-grid">
+      <div class="plan-card">
+        <div class="plan-name">SOLO</div>
+        <div class="plan-price"><span class="curr">$</span><span id="solo-price">29</span><span class="per">/mo</span></div>
+        <div class="plan-annual" id="solo-annual">&nbsp;</div>
+        <hr class="plan-divider">
+        <div class="plan-feature"><span class="check">✓</span> 1 environment</div>
+        <div class="plan-feature"><span class="check">✓</span> All 10 AI agents</div>
+        <div class="plan-feature"><span class="check">✓</span> Claude AI diagnosis</div>
+        <div class="plan-feature"><span class="check">✓</span> Persistent memory</div>
+        <div class="plan-feature"><span class="check">✓</span> 14-day free trial</div>
+        <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Slack alerts</span></div>
+        <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Multi-agent architecture</span></div>
+        <button onclick="startCheckout('solo')" class="btn plan-cta">Start Free Trial</button>
+      </div>
       <div class="plan-card">
         <div class="plan-name">STARTER</div>
         <div class="plan-price"><span class="curr">$</span><span id="starter-price">79</span><span class="per">/mo</span></div>
@@ -489,8 +503,10 @@ function setBilling(type) {
   document.getElementById('btn-monthly').classList.toggle('active', !a);
   document.getElementById('btn-annual').classList.toggle('active', a);
   document.getElementById('save-badge').style.display = a ? 'inline-block' : 'none';
+  document.getElementById('solo-price').textContent = a ? '24' : '29';
   document.getElementById('starter-price').textContent = a ? '69' : '79';
   document.getElementById('pro-price').textContent = a ? '249' : '299';
+  document.getElementById('solo-annual').innerHTML = a ? '<span class="highlight">Billed $299/yr — save $49</span>' : '&nbsp;';
   document.getElementById('starter-annual').innerHTML = a ? '<span class="highlight">Billed $828/yr — save $120</span>' : '&nbsp;';
   document.getElementById('pro-annual').innerHTML = a ? '<span class="highlight">Billed $2,988/yr — save $600</span>' : '&nbsp;';
 }

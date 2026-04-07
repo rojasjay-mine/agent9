@@ -161,6 +161,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 const MEMORY_KEY = "fx-agents-memory";
 
 const PRICES = {
+  "solo-monthly":    "price_1TJXeDGVEPbuDOhc59XQkMii",
+  "solo-annual":     "price_1TJXeHGVEPbuDOhcHI7UNbXg",
   "starter-monthly": "price_1TIJEiGVEPbuDOhcpbg0sLcH",
   "starter-annual":  "price_1TIx1lGVEPbuDOhcbDPb0lj9",
   "pro-monthly":     "price_1TIx1lGVEPbuDOhcFhdIyEQO",

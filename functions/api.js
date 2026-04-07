@@ -177,22 +177,22 @@ const LOGIN_HTML = `<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#070709;color:#c8cad4;font-family:'IBM Plex Mono',monospace;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(#1c1e26 1px,transparent 1px),linear-gradient(90deg,#1c1e26 1px,transparent 1px);background-size:60px 60px;opacity:0.3}
-  .box{position:relative;z-index:1;width:100%;max-width:400px;border:1px solid #1c1e26;background:#0d0e12;padding:48px 40px}
-  .logo{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:#f0f2ff;letter-spacing:2px;margin-bottom:40px;text-decoration:none;display:block}
-  .logo span{color:#00d4aa}
-  h1{font-family:'Orbitron',monospace;font-size:20px;color:#f0f2ff;margin-bottom:10px}
-  p{font-size:13px;color:#5a5d6e;margin-bottom:28px;line-height:1.7}
-  input{width:100%;background:#070709;border:1px solid #1c1e26;padding:12px 16px;color:#f0f2ff;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;transition:border-color 0.2s}
-  input:focus{border-color:#00d4aa}
-  button{width:100%;background:#00d4aa;border:1px solid #00d4aa;padding:12px;color:#070709;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:1px;transition:all 0.2s}
-  button:hover{background:#00f0c4}
-  button:disabled{background:#0d2e26;border-color:#004a38;color:#00806a;cursor:not-allowed}
+  body{background:#04080f;color:#8ec8e8;font-family:'IBM Plex Mono',monospace;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,160,255,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,160,255,0.07) 1px,transparent 1px);background-size:60px 60px}
+  .box{position:relative;z-index:1;width:100%;max-width:400px;border:1px solid #0d2040;background:#070d1a;padding:48px 40px}
+  .logo{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:#d0eeff;letter-spacing:2px;margin-bottom:40px;text-decoration:none;display:block;text-shadow:0 0 20px rgba(0,200,255,0.5)}
+  .logo span{color:#00c8ff}
+  h1{font-family:'Orbitron',monospace;font-size:20px;color:#d0eeff;margin-bottom:10px}
+  p{font-size:13px;color:#2a5070;margin-bottom:28px;line-height:1.7}
+  input{width:100%;background:#04080f;border:1px solid #0d2040;padding:12px 16px;color:#d0eeff;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;transition:border-color 0.2s}
+  input:focus{border-color:#00c8ff;box-shadow:0 0 8px rgba(0,200,255,0.2)}
+  button{width:100%;background:#00c8ff;border:1px solid #00c8ff;padding:12px;color:#04080f;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:1px;transition:all 0.2s}
+  button:hover{background:#40d8ff;box-shadow:0 0 20px rgba(0,200,255,0.3)}
+  button:disabled{background:#071a2e;border-color:#0d2040;color:#0066aa;cursor:not-allowed}
   .msg{margin-top:16px;font-size:12px;color:#ff4e4e;min-height:20px;line-height:1.6}
-  .msg.ok{color:#00d4aa}
-  .footer{margin-top:32px;font-size:12px;color:#5a5d6e}
-  .footer a{color:#00d4aa;text-decoration:none}
+  .msg.ok{color:#00c8ff}
+  .footer{margin-top:32px;font-size:12px;color:#2a5070}
+  .footer a{color:#00c8ff;text-decoration:none}
 </style>
 </head>
 <body>

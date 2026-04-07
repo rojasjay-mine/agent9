@@ -74,6 +74,9 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 - KV key for memory: `fx-agents-memory`
 - Memory: server (KV) is source of truth, localStorage is cache only
 
+## Visual theme
+Tron Legacy — deep navy (#04080f), glowing electric blue grid, Tron cyan (#00c8ff) accents, scan line at 40% opacity. Applies to index.html, how-it-works.html, and LOGIN_HTML in api.js.
+
 ## Current goal
-First paying customer at $79/mo. Site is live, Stripe is wired, security is locked down.
+First paying customer. Solo $29/mo, Starter $79/mo, Pro $299/mo. Site live, Stripe wired, auth gated, security locked.
 

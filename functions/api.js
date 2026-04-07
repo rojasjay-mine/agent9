@@ -397,6 +397,102 @@ export default {
       });
     }
 
+    // GET /admin — owner-only dashboard (system status, subscribers, health)
+    if ((url.pathname === "/admin" || url.pathname === "/admin/") && request.method === "GET") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return Response.redirect("https://fixitagent.ai/login", 302);
+
+      // Gather stats
+      let subCount = 0;
+      let kvStatus = "OK";
+      let stripeStatus = "Not configured";
+      let slackStatus = env.SLACK_WEBHOOK_URL ? "Configured" : "Not configured";
+      let subscribers = [];
+
+      try { await env.MEMORY.get("_health"); } catch { kvStatus = "ERROR"; }
+
+      if (env.STRIPE_SECRET_KEY) {
+        try {
+          const res = await fetch("https://api.stripe.com/v1/subscriptions?status=active&limit=100", {
+            headers: { "Authorization": `Bearer ${env.STRIPE_SECRET_KEY}` }
+          });
+          const data = await res.json();
+          subCount = data.data?.length || 0;
+          subscribers = (data.data || []).map(s => ({
+            email: s.customer_email || s.customer,
+            plan: s.items?.data?.[0]?.price?.id || "unknown",
+            status: s.status,
+            trial_end: s.trial_end ? new Date(s.trial_end * 1000).toISOString().slice(0,10) : null,
+          }));
+          stripeStatus = "Connected";
+        } catch { stripeStatus = "Error"; }
+      }
+
+      const adminHTML = \`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — fixitagent.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#04080f;color:#8ec8e8;font-family:'IBM Plex Mono',monospace;padding:40px 20px}
+  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,160,255,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,160,255,0.07) 1px,transparent 1px);background-size:60px 60px}
+  .wrap{max-width:700px;margin:0 auto;position:relative;z-index:1}
+  .logo{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:#d0eeff;letter-spacing:2px;margin-bottom:8px;text-shadow:0 0 20px rgba(0,200,255,0.5)}
+  .logo span{color:#00c8ff}
+  h1{font-family:'Orbitron',monospace;font-size:24px;color:#d0eeff;margin-bottom:32px}
+  .card{border:1px solid #0d2040;background:#070d1a;padding:24px;margin-bottom:16px}
+  .card h2{font-family:'Orbitron',monospace;font-size:13px;color:#00c8ff;letter-spacing:2px;margin-bottom:16px}
+  .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0d2040;font-size:13px}
+  .row:last-child{border:none}
+  .label{color:#2a5070}
+  .val{color:#d0eeff}
+  .val.ok{color:#00c8ff}
+  .val.err{color:#ff4e4e}
+  .sub-list{margin-top:12px}
+  .sub-item{padding:10px 0;border-bottom:1px solid #0d2040;font-size:12px;color:#8ec8e8}
+  .sub-item:last-child{border:none}
+  .links{margin-top:24px;display:flex;gap:16px}
+  .links a{color:#00c8ff;font-size:13px;text-decoration:none}
+  .links a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">FX<span>AGENT</span></div>
+  <h1>Admin Panel</h1>
+  <div class="card">
+    <h2>SYSTEM STATUS</h2>
+    <div class="row"><span class="label">Worker</span><span class="val ok">Online</span></div>
+    <div class="row"><span class="label">KV Memory</span><span class="val \${kvStatus === 'OK' ? 'ok' : 'err'}">\${kvStatus}</span></div>
+    <div class="row"><span class="label">Stripe</span><span class="val \${stripeStatus === 'Connected' ? 'ok' : 'err'}">\${stripeStatus}</span></div>
+    <div class="row"><span class="label">Slack</span><span class="val \${slackStatus === 'Configured' ? 'ok' : 'err'}">\${slackStatus}</span></div>
+    <div class="row"><span class="label">Active Subscribers</span><span class="val ok">\${subCount}</span></div>
+  </div>
+  <div class="card">
+    <h2>SUBSCRIBERS</h2>
+    \${subscribers.length === 0 ? '<div style="color:#2a5070;font-size:13px">No active subscribers yet.</div>' :
+      subscribers.map(s => \`<div class="sub-item">\${s.email} — \${s.status}\${s.trial_end ? ' (trial until ' + s.trial_end + ')' : ''}</div>\`).join('')}
+  </div>
+  <div class="card">
+    <h2>QUICK LINKS</h2>
+    <div class="links">
+      <a href="/agents">Agents</a>
+      <a href="/logout">Logout</a>
+      <a href="/">Home</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>\`;
+      return new Response(adminHTML, {
+        headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
+      });
+    }
+
     // GET /logout — clear cookie and redirect home
     if (url.pathname === "/logout") {
       return new Response(null, {

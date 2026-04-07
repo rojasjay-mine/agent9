@@ -158,8 +158,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </body>
 </html>`;
 
-const MEMORY_KEY = "fx-agents-memory";
-
 const PRICES = {
   "solo-monthly":    "price_1TJXeDGVEPbuDOhc59XQkMii",
   "solo-annual":     "price_1TJXeHGVEPbuDOhcHI7UNbXg",
@@ -169,16 +167,99 @@ const PRICES = {
   "pro-annual":      "price_1TIx1mGVEPbuDOhc9cjxLnec",
 };
 
-async function alertSecurityBreach(env, type, details) {
-  if (!env.SLACK_WEBHOOK_URL) return;
-  await fetch(env.SLACK_WEBHOOK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text: `🚨 *SECURITY ALERT — ${type}*\n${details}\n<!channel>`
-    }),
-  }).catch(() => {});
+// ── Login page HTML ───────────────────────────────────────────────────────────
+const LOGIN_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Access — fixitagent.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#070709;color:#c8cad4;font-family:'IBM Plex Mono',monospace;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(#1c1e26 1px,transparent 1px),linear-gradient(90deg,#1c1e26 1px,transparent 1px);background-size:60px 60px;opacity:0.3}
+  .box{position:relative;z-index:1;width:100%;max-width:400px;border:1px solid #1c1e26;background:#0d0e12;padding:48px 40px}
+  .logo{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:#f0f2ff;letter-spacing:2px;margin-bottom:40px;text-decoration:none;display:block}
+  .logo span{color:#00d4aa}
+  h1{font-family:'Orbitron',monospace;font-size:20px;color:#f0f2ff;margin-bottom:10px}
+  p{font-size:13px;color:#5a5d6e;margin-bottom:28px;line-height:1.7}
+  input{width:100%;background:#070709;border:1px solid #1c1e26;padding:12px 16px;color:#f0f2ff;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;transition:border-color 0.2s}
+  input:focus{border-color:#00d4aa}
+  button{width:100%;background:#00d4aa;border:1px solid #00d4aa;padding:12px;color:#070709;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:1px;transition:all 0.2s}
+  button:hover{background:#00f0c4}
+  button:disabled{background:#0d2e26;border-color:#004a38;color:#00806a;cursor:not-allowed}
+  .msg{margin-top:16px;font-size:12px;color:#ff4e4e;min-height:20px;line-height:1.6}
+  .msg.ok{color:#00d4aa}
+  .footer{margin-top:32px;font-size:12px;color:#5a5d6e}
+  .footer a{color:#00d4aa;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="box">
+  <a href="/" class="logo">FX<span>AGENT</span></a>
+  <h1>Member Access</h1>
+  <p>Enter the email you used to subscribe.</p>
+  <input type="email" id="email" placeholder="you@example.com" autofocus />
+  <button id="btn" onclick="login()">ACCESS AGENTS →</button>
+  <div class="msg" id="msg"></div>
+  <div class="footer">Not a member? <a href="/#pricing">See plans →</a></div>
+</div>
+<script>
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('btn');
+  if (!email) { msg.textContent = 'Enter your email.'; return; }
+  btn.disabled = true; btn.textContent = 'CHECKING...'; msg.textContent = '';
+  try {
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (res.ok) { msg.className = 'msg ok'; msg.textContent = 'Access granted. Redirecting...'; window.location.href = '/agents'; return; }
+    const text = await res.text();
+    msg.textContent = text || 'No active subscription found. Check your email or upgrade.';
+  } catch { msg.textContent = 'Something went wrong. Try again.'; }
+  btn.disabled = false; btn.textContent = 'ACCESS AGENTS →';
 }
+document.getElementById('email').addEventListener('keydown', e => e.key === 'Enter' && login());
+</script>
+</body>
+</html>`;
+
+// ── Auth helpers ──────────────────────────────────────────────────────────────
+async function signSession(email, secret) {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(email));
+  const b64sig = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  return `${btoa(email)}.${b64sig}`;
+}
+
+async function verifySessionCookie(cookieHeader, secret) {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(/fx_auth=([^;]+)/);
+  if (!match) return null;
+  const token = decodeURIComponent(match[1]);
+  try {
+    const [b64email] = token.split(".");
+    const email = atob(b64email);
+    const expected = await signSession(email, secret);
+    if (token !== expected) return null;
+    return email;
+  } catch { return null; }
+}
+
+function authCookie(token, maxAge = 2592000) {
+  return `fx_auth=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${maxAge}`;
+}
+
+// ── Stripe signature verification ─────────────────────────────────────────────
+async function verifyStripeSignature(rawBody, sigHeader, secret) {
   const parts = sigHeader.split(",").reduce((acc, p) => {
     const [k, v] = p.split("="); acc[k] = v; return acc;
   }, {});
@@ -190,7 +271,7 @@ async function alertSecurityBreach(env, type, details) {
     "raw", new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
   );
-  const raw = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+  const raw = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${rawBody}`));
   const computed = Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2, "0")).join("");
   return computed === sig;
 }
@@ -278,44 +359,101 @@ export default {
     const ALLOWED = ["https://fixitagent.ai", "https://www.fixitagent.ai"];
     const fromSite = ALLOWED.some(a => origin.startsWith(a) || referer.startsWith(a));
 
+    const sessionSecret = env.STRIPE_WEBHOOK_SECRET || "fx-fallback-secret";
+    const cookieHeader = request.headers.get("Cookie") || "";
+
+    // GET /login — serve login page
+    if (url.pathname === "/login" && request.method === "GET") {
+      return new Response(LOGIN_HTML, {
+        headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
+      });
+    }
+
+    // POST /login — verify email against KV subscriber list, set auth cookie
+    if (url.pathname === "/login" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      const email = (body.email || "").trim().toLowerCase();
+      if (!email) return new Response("Email required", { status: 400 });
+      const subRaw = env.MEMORY ? await env.MEMORY.get(`subscriber:${email}`) : null;
+      if (!subRaw) return new Response("No active subscription found for that email.", { status: 403 });
+      const sub = JSON.parse(subRaw);
+      if (sub.status !== "active") return new Response("Your subscription is no longer active.", { status: 403 });
+      const token = await signSession(email, sessionSecret);
+      return new Response("OK", {
+        status: 200,
+        headers: { "Set-Cookie": authCookie(token), ...SECURITY_HEADERS }
+      });
+    }
+
+    // GET /logout — clear cookie and redirect home
+    if (url.pathname === "/logout") {
+      return new Response(null, {
+        status: 302,
+        headers: { "Location": "https://fixitagent.ai/", "Set-Cookie": authCookie("", 0) }
+      });
+    }
+
+    // GET /verify-checkout — called after Stripe checkout, sets auth cookie
+    if (url.pathname === "/verify-checkout" && request.method === "GET") {
+      const csId = url.searchParams.get("cs");
+      if (!csId || !env.STRIPE_SECRET_KEY) return Response.redirect("https://fixitagent.ai/#pricing", 302);
+      const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${csId}`, {
+        headers: { "Authorization": `Bearer ${env.STRIPE_SECRET_KEY}` }
+      });
+      if (!res.ok) return Response.redirect("https://fixitagent.ai/#pricing", 302);
+      const session = await res.json();
+      const email = (session.customer_details?.email || "").toLowerCase();
+      if (!email) return Response.redirect("https://fixitagent.ai/#pricing", 302);
+      if (env.MEMORY) {
+        await env.MEMORY.put(`subscriber:${email}`, JSON.stringify({
+          status: "active",
+          customerId: session.customer,
+          sessionId: csId,
+        }));
+      }
+      const token = await signSession(email, sessionSecret);
+      return new Response(null, {
+        status: 302,
+        headers: { "Location": "https://fixitagent.ai/agents", "Set-Cookie": authCookie(token) }
+      });
+    }
+
+    // GET /agents — gated behind active subscription
     if (url.pathname === "/agents" || url.pathname === "/agents/") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      if (!email) return Response.redirect("https://fixitagent.ai/login", 302);
+      const subRaw = env.MEMORY ? await env.MEMORY.get(`subscriber:${email}`) : null;
+      if (!subRaw) return Response.redirect("https://fixitagent.ai/login", 302);
+      const sub = JSON.parse(subRaw);
+      if (sub.status !== "active") return Response.redirect("https://fixitagent.ai/#pricing", 302);
       return new Response(AGENTS_HTML, {
         headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
       });
     }
 
-    // GET /memory — fetch stored conversation history from KV
-    if (url.pathname === "/memory" && request.method === "GET" && !fromSite) {
-      return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
-    }
+    // GET /memory — fetch stored conversation history from KV (per user)
     if (url.pathname === "/memory" && request.method === "GET") {
-      if (!env.MEMORY) {
-        return new Response(JSON.stringify({}), {
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      const stored = await env.MEMORY.get(MEMORY_KEY);
-      return new Response(stored || "{}", {
-        headers: { "Content-Type": "application/json" }
-      });
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      if (!email) return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
+      if (!env.MEMORY) return new Response(JSON.stringify({}), { headers: { "Content-Type": "application/json" } });
+      const stored = await env.MEMORY.get(`memory:${email}`);
+      return new Response(stored || "{}", { headers: { "Content-Type": "application/json" } });
     }
 
-    // POST /memory — save conversation history to KV
-    if (url.pathname === "/memory" && request.method === "POST" && !fromSite) {
-      return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
-    }
+    // POST /memory — save conversation history to KV (per user)
     if (url.pathname === "/memory" && request.method === "POST") {
-      if (!env.MEMORY) {
-        return new Response("KV not configured", { status: 503 });
-      }
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      if (!email) return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
+      if (!env.MEMORY) return new Response("KV not configured", { status: 503 });
       let body;
       try {
         body = await request.text();
-        JSON.parse(body); // validate JSON
+        JSON.parse(body);
       } catch {
         return new Response("Invalid JSON", { status: 400 });
       }
-      await env.MEMORY.put(MEMORY_KEY, body);
+      await env.MEMORY.put(`memory:${email}`, body);
       return new Response("OK", { status: 200 });
     }
 
@@ -376,7 +514,7 @@ export default {
         "line_items[0][price]": priceId,
         "line_items[0][quantity]": "1",
         "subscription_data[trial_period_days]": "14",
-        success_url: "https://fixitagent.ai/?subscribed=true",
+        success_url: "https://fixitagent.ai/verify-checkout?cs={CHECKOUT_SESSION_ID}",
         cancel_url: "https://fixitagent.ai/#pricing",
       });
 
@@ -415,11 +553,35 @@ export default {
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
-        const email = session.customer_details?.email || "unknown";
+        const email = (session.customer_details?.email || "").toLowerCase();
         const amount = session.amount_subtotal ? `$${(session.amount_subtotal / 100).toFixed(0)}` : "";
-        slackMsg = `🎉 *New Agent9 Subscriber!*\n*Email:* ${email}\n*Amount:* ${amount}/mo\n*Trial:* 14 days free`;
+        if (email && env.MEMORY) {
+          await env.MEMORY.put(`subscriber:${email}`, JSON.stringify({
+            status: "active",
+            customerId: session.customer,
+            sessionId: session.id,
+          }));
+        }
+        slackMsg = `🎉 *New Agent9 Subscriber!*\n*Email:* ${email || "unknown"}\n*Amount:* ${amount}/mo\n*Trial:* 14 days free`;
       } else if (event.type === "customer.subscription.deleted") {
         const sub = event.data.object;
+        // Look up email from Stripe customer and mark cancelled in KV
+        if (env.STRIPE_SECRET_KEY && env.MEMORY) {
+          try {
+            const custRes = await fetch(`https://api.stripe.com/v1/customers/${sub.customer}`, {
+              headers: { "Authorization": `Bearer ${env.STRIPE_SECRET_KEY}` }
+            });
+            const cust = await custRes.json();
+            const email = (cust.email || "").toLowerCase();
+            if (email) {
+              const existing = await env.MEMORY.get(`subscriber:${email}`);
+              if (existing) {
+                const data = JSON.parse(existing);
+                await env.MEMORY.put(`subscriber:${email}`, JSON.stringify({ ...data, status: "cancelled" }));
+              }
+            }
+          } catch {}
+        }
         slackMsg = `❌ *Subscription Cancelled*\n*Customer:* ${sub.customer}\n*Plan:* ${sub.items?.data?.[0]?.price?.id || "unknown"}\n*Ended:* ${new Date(sub.ended_at * 1000).toISOString().slice(0,10)}`;
       } else if (event.type === "invoice.payment_failed") {
         const inv = event.data.object;

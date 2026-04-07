@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How It Works — fixitagent.ai</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #070709;
+      --panel: #0d0e12;
+      --border: #1c1e26;
+      --teal: #00d4aa;
+      --teal-dim: #00806a;
+      --amber: #f5a623;
+      --red: #ff4e4e;
+      --text: #c8cad4;
+      --text-dim: #5a5d6e;
+      --white: #f0f2ff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.3;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      padding: 16px 40px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7,7,9,0.9);
+      backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 18px; color: var(--white); letter-spacing: 2px; text-decoration: none; }
+    .logo span { color: var(--teal); }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--teal); }
+    .btn {
+      padding: 10px 24px; border: 1px solid var(--teal);
+      font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+      background: transparent; color: var(--teal); cursor: pointer;
+      text-decoration: none; transition: all 0.2s;
+    }
+    .btn:hover { background: var(--teal); color: var(--black); }
+    .btn-solid { background: var(--teal); color: var(--black); font-weight: 500; }
+    .btn-solid:hover { background: #00f0c4; border-color: #00f0c4; }
+
+    /* LAYOUT */
+    .container { max-width: 820px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* HERO */
+    .hero { padding: 80px 0 60px; text-align: center; }
+    .eyebrow { font-size: 11px; color: var(--teal); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 24px; }
+    h1 { font-family: 'Orbitron', monospace; font-size: clamp(28px, 5vw, 52px); font-weight: 900; color: var(--white); line-height: 1.1; }
+    h1 .accent { color: var(--teal); }
+    .hero-sub { margin-top: 20px; font-size: 15px; color: var(--text-dim); max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.8; }
+
+    /* STEPS */
+    .steps { padding: 60px 0 80px; }
+    .section-label { font-size: 11px; color: var(--teal); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 48px; text-align: center; }
+
+    .step {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 24px;
+      margin-bottom: 48px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      position: relative;
+    }
+    .step::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--teal);
+      opacity: 0.4;
+    }
+    .step-num {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--teal);
+      opacity: 0.4;
+      line-height: 1;
+      padding-top: 4px;
+    }
+    .step-content h3 {
+      font-family: 'Orbitron', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    .step-content p {
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    .step-content .example {
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: rgba(0, 212, 170, 0.04);
+      border-left: 2px solid var(--teal-dim);
+      font-size: 13px;
+      color: var(--text);
+    }
+    .step-content .example strong { color: var(--teal); }
+
+    /* AGENTS GRID */
+    .agents-section { padding: 20px 0 80px; }
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .agent-card {
+      padding: 20px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .agent-icon { font-size: 24px; margin-bottom: 10px; }
+    .agent-name { font-family: 'Orbitron', monospace; font-size: 13px; color: var(--white); margin-bottom: 6px; }
+    .agent-role { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+
+    /* CTA */
+    .cta-section {
+      padding: 60px 0 100px;
+      text-align: center;
+    }
+    .cta-box {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 48px 40px;
+    }
+    .cta-box h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(20px, 3vw, 32px);
+      color: var(--white);
+      margin-bottom: 16px;
+    }
+    .cta-box p { color: var(--text-dim); font-size: 14px; margin-bottom: 32px; }
+    .cta-price { font-size: 13px; color: var(--text-dim); margin-top: 16px; }
+    .cta-price strong { color: var(--teal); }
+
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .step { grid-template-columns: 40px 1fr; gap: 16px; padding: 20px; }
+      .step-num { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="logo">FX<span>AGENT</span></a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/agents" class="btn btn-solid">Open Agents</a>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <section class="hero">
+      <div class="eyebrow">How It Works</div>
+      <h1>Your team of <span class="accent">AI specialists</span><br>on call 24/7</h1>
+      <p class="hero-sub">No installs. No setup. Paste your problem, get a fix. Each agent is trained on one specific domain so you get expert answers, not generic ones.</p>
+    </section>
+
+    <section class="steps">
+      <div class="section-label">Step by Step</div>
+
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3>Sign up and get instant access</h3>
+          <p>Start your 14-day free trial — no charge until day 15. After checkout you land directly in the agent dashboard. No download, no install, works in any browser.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3>Pick the right agent for your problem</h3>
+          <p>Ten specialists are available. Each one knows one thing deeply. If your Cloudflare Pages deployment is broken, you open Webhook Doctor. If you're setting up env vars, you open ENV Guardian. Wrong tool = slower answer, right tool = instant fix.</p>
+          <div class="example"><strong>Example:</strong> "My POST route is returning 405" → open Webhook Doctor, not a general AI</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3>Paste your error, code, or question</h3>
+          <p>Copy the exact error message from your terminal, browser console, or Cloudflare logs. Paste it into the chat. The more specific you are, the faster the fix. You don't need to explain context — the agent already knows its domain.</p>
+          <div class="example"><strong>Example:</strong> Paste your full error log → agent returns root cause + exact code fix in seconds</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h3>Get a numbered, copy-paste-ready fix</h3>
+          <p>Agents are tuned to give you exact steps or exact code — not walls of text. You read it, apply it, done. If it doesn't work, paste the new error and keep going in the same thread.</p>
+          <div class="example"><strong>Example:</strong> "1. Change method to POST. 2. Add this header. 3. Redeploy." — not a 10-paragraph explanation</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <h3>Your conversation is saved</h3>
+          <p>Memory persists across sessions. Come back tomorrow and your thread is still there. Switch agents and come back — it remembers where you were. No starting over.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="agents-section">
+      <div class="section-label">The 10 Agents</div>
+      <div class="agents-grid">
+        <div class="agent-card"><div class="agent-icon">🩺</div><div class="agent-name">Webhook Doctor</div><div class="agent-role">Fixes 405 errors, POST handling, Cloudflare Pages function syntax</div></div>
+        <div class="agent-card"><div class="agent-icon">☁️</div><div class="agent-name">Cloudflare Copilot</div><div class="agent-role">Step-by-step Cloudflare Pages & Workers dashboard navigation</div></div>
+        <div class="agent-card"><div class="agent-icon">🔬</div><div class="agent-name">Code Surgeon</div><div class="agent-role">Rewrites and fixes JS for Cloudflare Pages Functions</div></div>
+        <div class="agent-card"><div class="agent-icon">💬</div><div class="agent-name">Slack Wrangler</div><div class="agent-role">Slack webhook setup, rotation, and testing</div></div>
+        <div class="agent-card"><div class="agent-icon">🚀</div><div class="agent-name">Deploy Commander</div><div class="agent-role">Manual deploy sequences for Cloudflare Pages via GitHub</div></div>
+        <div class="agent-card"><div class="agent-icon">🔍</div><div class="agent-name">Error Analyst</div><div class="agent-role">Reads error logs and gives root-cause fixes</div></div>
+        <div class="agent-card"><div class="agent-icon">🎵</div><div class="agent-name">TikTok Brain</div><div class="agent-role">Organic TikTok strategy for dropshipping content</div></div>
+        <div class="agent-card"><div class="agent-icon">✍️</div><div class="agent-name">Substack Ghost</div><div class="agent-role">Drafts newsletter content for the A.I. Can Teach It brand</div></div>
+        <div class="agent-card"><div class="agent-icon">🔐</div><div class="agent-name">ENV Guardian</div><div class="agent-role">Manages environment variables and credential security</div></div>
+        <div class="agent-card"><div class="agent-icon">🧠</div><div class="agent-name">FX Strategist</div><div class="agent-role">Big picture FX brand and revenue strategy</div></div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="cta-box">
+        <h2>Ready to stop Googling?</h2>
+        <p>14-day free trial. Cancel anytime. Your first fix could save hours.</p>
+        <button onclick="startCheckout('starter')" class="btn btn-solid">Start Free Trial</button>
+        <div class="cta-price">Then <strong>$79/mo</strong> — or save 12% with annual</div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    async function startCheckout(plan) {
+      try {
+        const res = await fetch('/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan, billing: 'monthly' })
+        });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+      } catch (e) {
+        alert('Something went wrong. Please try again.');
+      }
+    }
+  </script>
+
+</body>
+</html>

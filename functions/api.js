@@ -375,6 +375,17 @@ export default {
       try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
       const email = (body.email || "").trim().toLowerCase();
       if (!email) return new Response("Email required", { status: 400 });
+
+      // Owner always gets in — auto-creates KV entry if missing
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email === ownerEmail) {
+        if (env.MEMORY) {
+          await env.MEMORY.put(`subscriber:${email}`, JSON.stringify({ status: "active", customerId: "owner" }));
+        }
+        const token = await signSession(email, sessionSecret);
+        return new Response("OK", { status: 200, headers: { "Set-Cookie": authCookie(token), ...SECURITY_HEADERS } });
+      }
+
       const subRaw = env.MEMORY ? await env.MEMORY.get(`subscriber:${email}`) : null;
       if (!subRaw) return new Response("No active subscription found for that email.", { status: 403 });
       const sub = JSON.parse(subRaw);

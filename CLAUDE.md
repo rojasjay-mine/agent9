@@ -80,3 +80,11 @@ Tron Legacy — deep navy (#04080f), glowing electric blue grid, Tron cyan (#00c
 ## Current goal
 First paying customer. Solo $29/mo, Starter $79/mo, Pro $299/mo. Site live, Stripe wired, auth gated, security locked.
 
+## Last session
+- Full copy rewrite — classy/futuristic tone, removed all "required/needed" language
+- Added /admin panel (owner-only, system status + subscriber list)
+- Owner bypass: rojasjay@gmail.com always gets in via /login, auto-creates KV entry
+- All code deploys via main → Cloudflare auto-deploys, no dashboard needed
+- Infrastructure scan done — biggest risk: webhook secret in CLAUDE.md (rotate if repo goes public)
+- Social media posting: no tools yet, user will connect later
+

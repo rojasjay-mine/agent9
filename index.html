@@ -8,16 +8,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --black: #070709;
-    --panel: #0d0e12;
-    --border: #1c1e26;
-    --teal: #00d4aa;
-    --teal-dim: #00806a;
-    --amber: #f5a623;
+    --black: #04080f;
+    --panel: #070d1a;
+    --border: #0d2040;
+    --teal: #00c8ff;
+    --teal-dim: #0066aa;
+    --amber: #ff8c00;
     --red: #ff4e4e;
-    --text: #c8cad4;
-    --text-dim: #5a5d6e;
-    --white: #f0f2ff;
+    --text: #8ec8e8;
+    --text-dim: #2a5070;
+    --white: #d0eeff;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
@@ -33,9 +33,8 @@
     content: '';
     position: fixed;
     inset: 0;
-    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(0,160,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0,160,255,0.07) 1px, transparent 1px);
     background-size: 60px 60px;
-    opacity: 0.35;
     pointer-events: none;
     z-index: 0;
   }
@@ -46,7 +45,7 @@
     width: 100%; height: 2px;
     background: linear-gradient(90deg, transparent, var(--teal), transparent);
     animation: scan 8s linear infinite;
-    opacity: 0.15;
+    opacity: 0.4;
     z-index: 1;
     pointer-events: none;
   }
@@ -56,11 +55,11 @@
     padding: 18px 40px;
     display: flex; justify-content: space-between; align-items: center;
     border-bottom: 1px solid var(--border);
-    background: rgba(7,7,9,0.9);
+    background: rgba(4,8,15,0.92);
     backdrop-filter: blur(12px);
     z-index: 100;
   }
-  .logo { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 18px; color: var(--white); letter-spacing: 2px; }
+  .logo { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 18px; color: var(--white); letter-spacing: 2px; text-shadow: 0 0 20px rgba(0,200,255,0.5); }
   .logo span { color: var(--teal); }
   .nav-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); animation: pulse 2s ease-in-out infinite; }
@@ -123,7 +122,7 @@
   .toggle-opt { padding: 8px 20px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; cursor: pointer; border: none; background: transparent; color: var(--text-dim); transition: all 0.2s; }
   .toggle-opt.active { background: var(--teal); color: var(--black); font-weight: 500; }
   .save-badge { font-size: 11px; padding: 4px 10px; border: 1px solid var(--amber); color: var(--amber); letter-spacing: 1px; }
-  .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+  .plans-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); }
   .plan-card { background: var(--black); padding: 40px 36px; position: relative; }
   .plan-card.featured { background: #0a1410; border: 1px solid var(--teal); margin: -1px; z-index: 1; }
   .plan-badge { position: absolute; top: -1px; right: 28px; font-size: 10px; padding: 5px 14px; background: var(--teal); color: var(--black); font-weight: 500; letter-spacing: 2px; }
@@ -202,7 +201,7 @@
     .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
     .flow-row { flex-direction: column; }
     .flow-arrow { transform: rotate(90deg); padding: 8px 0; width: 100%; text-align: center; }
-    .plans-grid { grid-template-columns: 1fr; }
+    .plans-grid { grid-template-columns: 1fr; gap: 0; }
     .plan-card.featured { margin: 0; }
     .tl-item { grid-template-columns: 70px 30px 1fr; }
     .compare-grid { grid-template-columns: 1fr; }
@@ -214,18 +213,21 @@
 
 <nav>
   <div class="logo">FIX<span>IT</span>AGENT</div>
-  <div class="nav-status"><div class="dot"></div>AGENT9 OPERATIONAL</div>
-  <a href="#cta" class="btn">Request Access</a>
+  <div class="nav-status"><div class="dot"></div>ALL AGENTS ONLINE</div>
+  <div style="display:flex;gap:16px;align-items:center;">
+    <a href="/how-it-works.html" style="color:var(--text-dim);text-decoration:none;font-size:13px;">How It Works</a>
+    <a href="#cta" class="btn">Request Access</a>
+  </div>
 </nav>
 
 <!-- HERO -->
 <section id="hero">
-  <div class="eyebrow">// AUTONOMOUS INFRASTRUCTURE ENGINE — v0.1 LIVE</div>
-  <h1>Infrastructure<br>that <span class="accent">fixes itself.</span><br><span class="dim">No humans required.</span></h1>
-  <p class="hero-sub">Agent9 receives your infrastructure alerts, diagnoses the root cause using AI, and posts the exact fix to your team — before anyone wakes up.</p>
+  <div class="eyebrow">AGENT9 — TEN SPECIALISTS, ONE SYSTEM</div>
+  <h1>Ten minds.<br>One stack.<br><span class="accent">No explanations.</span></h1>
+  <p class="hero-sub">A constellation of purpose-built AI agents — each a specialist in its domain. Webhook failures. Deploy crises. Environment leaks. They don't file tickets. They return the exact fix.</p>
   <div class="hero-cta">
-    <a href="#cta" class="btn btn-solid">Get Early Access</a>
-    <a href="#pricing" class="btn">See Pricing</a>
+    <a href="#cta" class="btn btn-solid">Begin Free Trial</a>
+    <a href="#pricing" class="btn">View Plans</a>
   </div>
   <div class="terminal">
     <div class="terminal-bar">
@@ -238,34 +240,34 @@
 
 <!-- STATS -->
 <div class="stat-bar">
-  <div class="stat-item"><div class="stat-num">&lt;<span class="u">2s</span></div><div class="stat-label">DIAGNOSIS TIME</div></div>
+  <div class="stat-item"><div class="stat-num">&lt;<span class="u">2s</span></div><div class="stat-label">ALERT TO FIX</div></div>
   <div class="stat-item"><div class="stat-num">24<span class="u">/7</span></div><div class="stat-label">ALWAYS WATCHING</div></div>
-  <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">HUMANS PAGED AT 3AM</div></div>
-  <div class="stat-item"><div class="stat-num">v<span class="u">0.1</span></div><div class="stat-label">LIVE TODAY</div></div>
+  <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">DOMAIN SPECIALISTS</div></div>
+  <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">ENGINEERS PAGED</div></div>
 </div>
 
 <!-- HOW IT WORKS -->
 <section id="now">
-  <div class="section-label">// CURRENT BUILD</div>
-  <h2>What Agent9 does right now.</h2>
-  <p style="color:var(--text-dim);max-width:520px;font-size:13px;line-height:1.9;">v0.1 is live. One webhook. One brain. One output. Already handles what takes your team 20 minutes at midnight.</p>
+  <div class="section-label">// HOW IT MOVES</div>
+  <h2>Alert in. Fix out.</h2>
+  <p style="color:var(--text-dim);max-width:520px;font-size:13px;line-height:1.9;">The gap between "something broke" and "here's the exact fix" used to require a team, a runbook, and twenty minutes. Agent9 closes it in under two seconds.</p>
   <div class="flow-row">
     <div class="flow-node">
-      <div class="fn-icon">01 // INPUT</div>
-      <div class="fn-title">WEBHOOK ALERT</div>
-      <div class="fn-desc">Any monitoring tool — Datadog, PagerDuty, Prometheus — fires a webhook to Agent9.</div>
+      <div class="fn-icon">01 // INTERCEPT</div>
+      <div class="fn-title">ALERT ARRIVES</div>
+      <div class="fn-desc">Webhook, Datadog, PagerDuty — doesn't matter. Agent9 catches the signal the moment it fires, before it reaches a human.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-node">
-      <div class="fn-icon">02 // BRAIN</div>
-      <div class="fn-title">CLAUDE DIAGNOSES</div>
-      <div class="fn-desc">AI reads the alert, determines severity, root cause, and the exact recommended fix.</div>
+      <div class="fn-icon">02 // DISSECT</div>
+      <div class="fn-title">SPECIALIST ENGAGES</div>
+      <div class="fn-desc">The right agent takes the case. Root cause, severity, blast radius — assessed with surgical precision by the AI built for exactly this failure mode.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-node">
-      <div class="fn-icon">03 // OUTPUT</div>
-      <div class="fn-title">SLACK POST</div>
-      <div class="fn-desc">Structured report hits #alerts instantly. SEVERITY. DIAGNOSIS. FIX. Done.</div>
+      <div class="fn-icon">03 // DELIVER</div>
+      <div class="fn-title">FIX IN HAND</div>
+      <div class="fn-desc">A complete remediation: classified, diagnosed, prescribed. Posted to Slack. Logged for audit. Your team wakes up to a closed incident.</div>
     </div>
   </div>
 </section>
@@ -275,9 +277,9 @@
 <!-- PRICING -->
 <section id="pricing">
   <div class="pricing-inner">
-    <div class="section-label">// PRICING</div>
-    <h2>Simple. No per-seat nonsense.</h2>
-    <p style="color:var(--text-dim);font-size:13px;max-width:480px;line-height:1.9;">Pay per environment, not per engineer. Start free for 14 days — no card required.</p>
+    <div class="section-label">// INTELLIGENCE TIERS</div>
+    <h2>One flat rate. No seats. No surprises.</h2>
+    <p style="color:var(--text-dim);font-size:13px;max-width:480px;line-height:1.9;">Pay per environment, not per engineer. 14-day free trial — no card to start.</p>
     <div class="billing-toggle">
       <div class="toggle-pill">
         <button class="toggle-opt active" id="btn-monthly" onclick="setBilling('monthly')">MONTHLY</button>
@@ -286,6 +288,20 @@
       <span class="save-badge" id="save-badge" style="display:none">SAVE UP TO $600/YR</span>
     </div>
     <div class="plans-grid">
+      <div class="plan-card">
+        <div class="plan-name">SOLO</div>
+        <div class="plan-price"><span class="curr">$</span><span id="solo-price">29</span><span class="per">/mo</span></div>
+        <div class="plan-annual" id="solo-annual">&nbsp;</div>
+        <hr class="plan-divider">
+        <div class="plan-feature"><span class="check">✓</span> 1 environment</div>
+        <div class="plan-feature"><span class="check">✓</span> All 10 AI agents</div>
+        <div class="plan-feature"><span class="check">✓</span> Claude AI diagnosis</div>
+        <div class="plan-feature"><span class="check">✓</span> Persistent memory</div>
+        <div class="plan-feature"><span class="check">✓</span> 14-day free trial</div>
+        <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Slack alerts</span></div>
+        <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Multi-agent architecture</span></div>
+        <button onclick="startCheckout('solo')" class="btn plan-cta">Start Free Trial</button>
+      </div>
       <div class="plan-card">
         <div class="plan-name">STARTER</div>
         <div class="plan-price"><span class="curr">$</span><span id="starter-price">79</span><span class="per">/mo</span></div>
@@ -299,7 +315,7 @@
         <div class="plan-feature"><span class="check">✓</span> 14-day free trial</div>
         <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Multi-agent architecture</span></div>
         <div class="plan-feature"><span class="na">—</span> <span style="color:var(--text-dim)">Priority support</span></div>
-        <a href="#cta" class="btn plan-cta">Start Free Trial</a>
+        <button onclick="startCheckout('starter')" class="btn plan-cta">Start Free Trial</button>
       </div>
       <div class="plan-card featured">
         <div class="plan-badge">MOST POPULAR</div>
@@ -315,7 +331,7 @@
         <div class="plan-feature"><span class="check">✓</span> 14-day free trial</div>
         <div class="plan-feature"><span class="check">✓</span> Multi-agent architecture (v0.2)</div>
         <div class="plan-feature"><span class="check">✓</span> Priority support</div>
-        <a href="#cta" class="btn btn-solid plan-cta">Start Free Trial</a>
+        <button onclick="startCheckout('pro')" class="btn btn-solid plan-cta">Start Free Trial</button>
       </div>
     </div>
     <p style="font-size:12px;color:var(--text-dim);margin-top:24px;text-align:center;">
@@ -327,15 +343,15 @@
 <!-- ROADMAP -->
 <section id="vision">
   <div class="vision-inner">
-    <div class="section-label">// ROADMAP</div>
-    <h2>What it becomes.</h2>
+    <div class="section-label">// EVOLUTION</div>
+    <h2>Where this goes.</h2>
     <div class="timeline">
       <div class="tl-item">
         <div class="tl-version active">v0.1</div>
         <div class="tl-line-col"><div class="tl-dot active"></div><div class="tl-vline"></div></div>
         <div class="tl-content">
-          <div class="tl-title">Diagnose & Alert</div>
-          <div class="tl-desc">Webhook in. Claude diagnoses. Slack post with severity, root cause, and recommended fix. Already handling what takes humans 20 minutes — at 3am.</div>
+          <div class="tl-title">Reactive Intelligence</div>
+          <div class="tl-desc">Agent9 intercepts your alerts and returns clarity. Severity classified. Root cause identified. Exact fix prescribed. In under two seconds, at any hour.</div>
           <div class="tl-tags"><span class="tag live">LIVE NOW</span><span class="tag">Cloudflare Worker</span><span class="tag">Claude AI</span><span class="tag">Slack</span></div>
         </div>
       </div>
@@ -343,8 +359,8 @@
         <div class="tl-version">v0.2</div>
         <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-vline"></div></div>
         <div class="tl-content">
-          <div class="tl-title">Multi-Agent Architecture</div>
-          <div class="tl-desc">Four specialized agents running in parallel. Triage. Diagnosis. Audit. Comms. Faster, smarter, no single point of failure.</div>
+          <div class="tl-title">Distributed Cognition</div>
+          <div class="tl-desc">A constellation of specialized agents operating in parallel. Each an expert in its domain. Faster resolution. Deeper analysis. No single point of failure.</div>
           <div class="tl-tags"><span class="tag">Triage Agent</span><span class="tag">Diagnosis Agent</span><span class="tag">Audit Agent</span><span class="tag">Comms Agent</span></div>
         </div>
       </div>
@@ -352,8 +368,8 @@
         <div class="tl-version">v1.0</div>
         <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-vline" style="min-height:0;height:0"></div></div>
         <div class="tl-content">
-          <div class="tl-title">Self-Healing Infrastructure</div>
-          <div class="tl-desc">Detects the anomaly. Writes the fix. Executes it. Rolls back if it fails. Logs everything. Your infrastructure restores itself while your team sleeps.</div>
+          <div class="tl-title">Autonomous Remediation</div>
+          <div class="tl-desc">The anomaly is detected. The fix is written. The system heals itself. Rollback if it fails. Full audit trail. Your infrastructure becomes self-correcting — no human in the loop.</div>
           <div class="tl-tags"><span class="tag">Auto-Remediation</span><span class="tag">Rollback Safety</span><span class="tag">Multi-Cloud</span><span class="tag">Audit Trail</span></div>
         </div>
       </div>
@@ -363,25 +379,25 @@
 
 <!-- ANGLE -->
 <section id="angle">
-  <div class="section-label">// THE SHIFT</div>
-  <div class="big-quote">Every other tool<br><span class="cross">screams at you.</span><br>Agent9 <span class="teal">fixes it.</span></div>
-  <p class="quote-sub">PagerDuty wakes you up. Datadog charts the problem. OpsGenie routes the ticket. Nobody solves it. That's what we built Agent9 for.</p>
+  <div class="section-label">// THE DISTINCTION</div>
+  <div class="big-quote">Every other tool<br><span class="cross">alerts you.</span><br>Agent9 <span class="teal">resolves it.</span></div>
+  <p class="quote-sub">PagerDuty wakes you. Datadog charts the damage. OpsGenie routes the ticket. Nobody closes it. Agent9 was built for exactly that silence after the alarm.</p>
   <div class="compare-grid">
     <div class="compare-cell">
-      <div class="compare-label bad">// BEFORE AGENT9</div>
+      <div class="compare-label bad">// WITHOUT AGENT9</div>
       <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Alert fires at 2:47am</div>
-      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Engineer gets paged</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Engineer is paged</div>
       <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> 20 minutes to diagnose</div>
-      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Manual fix applied</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Fix applied manually</div>
       <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Post-mortem written days later</div>
     </div>
     <div class="compare-cell">
       <div class="compare-label good">// WITH AGENT9</div>
       <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Alert fires at 2:47am</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Agent9 receives it instantly</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Diagnosis in under 2 seconds</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Fix posted to Slack</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Audit trail auto-generated</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Agent9 intercepts instantly</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Root cause in under 2 seconds</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Exact fix delivered to Slack</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Audit trail generated automatically</div>
     </div>
   </div>
 </section>
@@ -389,9 +405,9 @@
 <!-- FORM -->
 <section id="cta">
   <div class="cta-inner">
-    <div class="section-label" style="text-align:center">// GET STARTED</div>
-    <h2 style="text-align:center">14 days free.<br><span style="color:var(--teal)">No card required.</span></h2>
-    <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-top:12px;">Early access. You control the API key. Flat monthly rate. Cancel anytime.</p>
+    <div class="section-label" style="text-align:center">// BEGIN</div>
+    <h2 style="text-align:center">Fourteen days.<br><span style="color:var(--teal)">Every agent. Full capability.</span></h2>
+    <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-top:12px;">No card to start. Flat rate after trial — no seats, no per-alert fees. Cancel anytime.</p>
     <div class="form-card">
       <div id="form-wrap">
         <div class="form-row">
@@ -427,12 +443,12 @@
         </p>
       </div>
       <div class="success-msg" id="success-msg">
-        <div class="success-icon">// ACK</div>
+        <div class="success-icon">// CONFIRMED</div>
         <p class="success-text">
-          You're in the queue.<br><br>
-          Expect an email within 24 hours.<br>
-          Every Thursday — what shipped, what's next, what we learned.<br><br>
-          <span style="color:var(--teal)">Agent9 is already watching.</span>
+          Access request received.<br><br>
+          You'll hear from us within 24 hours.<br>
+          Updates ship every Thursday — what launched, what's next, what we learned.<br><br>
+          <span style="color:var(--teal)">Agent9 is already operational.</span>
         </p>
       </div>
     </div>
@@ -440,8 +456,8 @@
 </section>
 
 <footer>
-  <div class="logo" style="font-size:14px">FIX<span style="color:var(--teal)">IT</span>AGENT <span style="color:var(--text-dim);font-family:'IBM Plex Mono';font-weight:300;font-size:12px">// Agent9 v0.1</span></div>
-  <div>fixitagent.ai &nbsp;·&nbsp; Built on Cloudflare &nbsp;·&nbsp; Powered by Claude</div>
+  <div class="logo" style="font-size:14px">FIX<span style="color:var(--teal)">IT</span>AGENT <span style="color:var(--text-dim);font-family:'IBM Plex Mono';font-weight:300;font-size:12px">— Agent9 v0.1</span></div>
+  <div>fixitagent.ai &nbsp;·&nbsp; Powered by Claude &nbsp;·&nbsp; Built on Cloudflare</div>
 </footer>
 
 <script>
@@ -479,15 +495,49 @@ function addLine() {
 }
 setTimeout(addLine, 1400);
 
+let currentBilling = 'monthly';
 function setBilling(type) {
+  currentBilling = type;
   const a = type === 'annual';
   document.getElementById('btn-monthly').classList.toggle('active', !a);
   document.getElementById('btn-annual').classList.toggle('active', a);
   document.getElementById('save-badge').style.display = a ? 'inline-block' : 'none';
+  document.getElementById('solo-price').textContent = a ? '24' : '29';
   document.getElementById('starter-price').textContent = a ? '69' : '79';
   document.getElementById('pro-price').textContent = a ? '249' : '299';
+  document.getElementById('solo-annual').innerHTML = a ? '<span class="highlight">Billed $299/yr — save $49</span>' : '&nbsp;';
   document.getElementById('starter-annual').innerHTML = a ? '<span class="highlight">Billed $828/yr — save $120</span>' : '&nbsp;';
   document.getElementById('pro-annual').innerHTML = a ? '<span class="highlight">Billed $2,988/yr — save $600</span>' : '&nbsp;';
+}
+
+async function startCheckout(plan) {
+  const btns = document.querySelectorAll('.plan-cta');
+  btns.forEach(b => { b.disabled = true; b.textContent = 'REDIRECTING...'; });
+  try {
+    const res = await fetch('/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, billing: currentBilling }),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error('No checkout URL');
+    }
+  } catch {
+    btns.forEach(b => { b.disabled = false; b.textContent = 'Start Free Trial'; });
+    alert('Something went wrong. Please try again.');
+  }
+}
+
+// Show banner if returning from successful checkout
+if (new URLSearchParams(window.location.search).get('subscribed') === 'true') {
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#00d4aa;color:#070709;text-align:center;padding:14px;font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:500;letter-spacing:2px;z-index:999;';
+  banner.textContent = '✓ TRIAL ACTIVATED — CHECK YOUR EMAIL FOR SETUP INSTRUCTIONS';
+  document.body.prepend(banner);
+  history.replaceState({}, '', '/');
 }
 
 async function submitForm() {

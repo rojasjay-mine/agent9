@@ -6,11 +6,21 @@
   "observability": {
     "enabled": true
   },
+  "routes": [
+    { "pattern": "fixitagent.ai/*", "zone_name": "fixitagent.ai" },
+    { "pattern": "www.fixitagent.ai/*", "zone_name": "fixitagent.ai" }
+  ],
   "assets": {
     "directory": "./",
     "binding": "ASSETS"
   },
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  "kv_namespaces": [
+    { "binding": "MEMORY", "id": "ba902d31d72444d9aae25bbb24a269e1" }
+  ],
+  "triggers": {
+    "crons": ["0 * * * *"]
+  }
 }

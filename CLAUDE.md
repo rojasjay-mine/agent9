@@ -20,7 +20,7 @@ A Cloudflare Worker serving a React-based AI agent chat UI at fixitagent.ai. Pro
 webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-commander, error-analyst, tiktok-brain, substack-ghost, env-guardian, fx-strategist
 
 ## Dev branch
-`claude/catch-up-cXBUt` — push here, never to main without permission
+`claude/review-last-session-W2uxf` — current working branch. Merge to main to deploy.
 
 ## Stripe integration
 - Product: `prod_UGqw8ZLonlFJmS` (agent9)
@@ -80,11 +80,17 @@ Tron Legacy — deep navy (#04080f), glowing electric blue grid, Tron cyan (#00c
 ## Current goal
 First paying customer. Solo $29/mo, Starter $79/mo, Pro $299/mo. Site live, Stripe wired, auth gated, security locked.
 
+## Deploy
+- GitHub Actions workflow: `.github/workflows/deploy.yml` — triggers on push to main
+- `CLOUDFLARE_API_TOKEN` saved as GitHub Actions secret
+- Account ID: `6b2fdf0e036db269314e45966c0ff757`
+- To deploy: merge to main or push any commit to main
+- To deploy from Claude session: `npx wrangler deploy` (requires CLOUDFLARE_API_TOKEN in env)
+
 ## Last session
-- Full copy rewrite — classy/futuristic tone, removed all "required/needed" language
-- Added /admin panel (owner-only, system status + subscriber list)
-- Owner bypass: rojasjay@gmail.com always gets in via /login, auto-creates KV entry
-- All code deploys via main → Cloudflare auto-deploys, no dashboard needed
-- Infrastructure scan done — biggest risk: webhook secret in CLAUDE.md (rotate if repo goes public)
-- Social media posting: no tools yet, user will connect later
+- Landing page copy rewrite — "Ten minds. One stack. No explanations." hero
+- Agents UI brightened — deep navy instead of near-black, readable borders/text
+- Merged all feature branches to main (30+ commits now live on GitHub)
+- Fixed deploy pipeline: added package.json, GitHub Actions workflow, fixed wrangler $schema
+- CLOUDFLARE_API_TOKEN added to GitHub secrets — auto-deploy on push to main now works
 

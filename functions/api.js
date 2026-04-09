@@ -9,11 +9,11 @@ const AGENTS_HTML = `<!DOCTYPE html>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #070709; color: #e0e0e0; font-family: 'Courier New', monospace; }
+  body { background: #0c1220; color: #c8d8f0; font-family: 'Courier New', monospace; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #070709; }
-  ::-webkit-scrollbar-thumb { background: #1a1a2e; border-radius: 2px; }
-  input::placeholder { color: #2a2a2a; }
+  ::-webkit-scrollbar-track { background: #0c1220; }
+  ::-webkit-scrollbar-thumb { background: #1e3050; border-radius: 2px; }
+  input::placeholder { color: #3a5070; }
 </style>
 </head>
 <body>
@@ -94,22 +94,22 @@ function App() {
     setLoading(false);
   };
   const S = {
-    header: { padding: "14px 20px", borderBottom: "1px solid #111", display: "flex", alignItems: "center", gap: "10px" },
-    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid #0f0f0f", scrollbarWidth: "none" },
-    role: { padding: "6px 16px", fontSize: "10px", color: "#2a2a2a", borderBottom: "1px solid #0a0a0a", letterSpacing: "1px" },
+    header: { padding: "14px 20px", borderBottom: "1px solid #1e3050", display: "flex", alignItems: "center", gap: "10px" },
+    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid #172840", scrollbarWidth: "none" },
+    role: { padding: "6px 16px", fontSize: "10px", color: "#3a5878", borderBottom: "1px solid #172840", letterSpacing: "1px" },
     msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", minHeight: "300px", maxHeight: "calc(100vh - 200px)" },
-    inputRow: { padding: "12px 16px", borderTop: "1px solid #0f0f0f", display: "flex", gap: "8px" },
+    inputRow: { padding: "12px 16px", borderTop: "1px solid #172840", display: "flex", gap: "8px" },
   };
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={S.header}>
-        <span style={{ fontSize: "11px", color: "#444", letterSpacing: "3px" }}>FX</span>
-        <span style={{ color: "#222" }}>|</span>
+        <span style={{ fontSize: "11px", color: "#4a6a8a", letterSpacing: "3px" }}>FX</span>
+        <span style={{ color: "#2a4060" }}>|</span>
         <span style={{ fontSize: "11px", color: activeAgent.color, letterSpacing: "2px" }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
-          {memoryStatus && <span style={{ fontSize: "9px", color: "#1a3a1a", letterSpacing: "1px" }}>MEM:{memoryStatus}</span>}
-          <span style={{ fontSize: "9px", color: "#1f3a1f", letterSpacing: "1px" }}>SAVED</span>
-          <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid #1a1a1a", borderRadius: "3px", padding: "3px 8px", color: "#333", fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
+          {memoryStatus && <span style={{ fontSize: "9px", color: "#2a6a3a", letterSpacing: "1px" }}>MEM:{memoryStatus}</span>}
+          <span style={{ fontSize: "9px", color: "#2a5a3a", letterSpacing: "1px" }}>SAVED</span>
+          <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid #1e3050", borderRadius: "3px", padding: "3px 8px", color: "#4a6a8a", fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
         </div>
       </div>
       <div style={S.tabs}>
@@ -117,7 +117,7 @@ function App() {
           const hasHistory = (messages[a.id] || []).length > 0;
           const isActive = activeAgent.id === a.id;
           return (
-            <button key={a.id} onClick={() => setActiveAgent(a)} style={{ flexShrink: 0, background: isActive ? "#0d0d1a" : "transparent", border: "1px solid " + (isActive ? a.color : hasHistory ? "#252525" : "#111"), borderRadius: "4px", padding: "5px 11px", cursor: "pointer", color: isActive ? a.color : hasHistory ? "#555" : "#222", fontSize: "10px", letterSpacing: "1px", whiteSpace: "nowrap", fontFamily: "inherit", position: "relative" }}>
+            <button key={a.id} onClick={() => setActiveAgent(a)} style={{ flexShrink: 0, background: isActive ? "#102040" : "transparent", border: "1px solid " + (isActive ? a.color : hasHistory ? "#2a4060" : "#1a3050"), borderRadius: "4px", padding: "5px 11px", cursor: "pointer", color: isActive ? a.color : hasHistory ? "#7a9ab8" : "#3a5878", fontSize: "10px", letterSpacing: "1px", whiteSpace: "nowrap", fontFamily: "inherit", position: "relative" }}>
               {a.icon} {a.name}
               {hasHistory && !isActive && <span style={{ position: "absolute", top: "3px", right: "3px", width: "4px", height: "4px", borderRadius: "50%", background: a.color, opacity: 0.7 }} />}
             </button>
@@ -134,7 +134,7 @@ function App() {
         )}
         {current.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-            <div style={{ maxWidth: "84%", background: m.role === "user" ? "#0c0c1a" : "#080808", border: "1px solid " + (m.role === "user" ? activeAgent.color + "30" : "#111"), borderRadius: "5px", padding: "10px 14px", fontSize: "12px", lineHeight: "1.65", color: m.role === "user" ? "#bbb" : "#999", whiteSpace: "pre-wrap" }}>
+            <div style={{ maxWidth: "84%", background: m.role === "user" ? "#111e35" : "#0e1928", border: "1px solid " + (m.role === "user" ? activeAgent.color + "50" : "#1e3050"), borderRadius: "5px", padding: "10px 14px", fontSize: "12px", lineHeight: "1.65", color: m.role === "user" ? "#d0e8ff" : "#b0c8e8", whiteSpace: "pre-wrap" }}>
               {m.role === "assistant" && <div style={{ fontSize: "9px", color: activeAgent.color, marginBottom: "6px", letterSpacing: "2px" }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</div>}
               {m.content}
             </div>
@@ -145,8 +145,8 @@ function App() {
       </div>
       <div style={S.inputRow}>
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()} placeholder={"Ask " + activeAgent.name + "..."}
-          style={{ flex: 1, background: "#080808", border: "1px solid #1a1a1a", borderRadius: "4px", padding: "10px 14px", color: "#ccc", fontSize: "12px", outline: "none", fontFamily: "inherit" }} />
-        <button onClick={sendMessage} disabled={loading || !input.trim()} style={{ background: loading ? "#080808" : activeAgent.color + "15", border: "1px solid " + (loading ? "#111" : activeAgent.color + "77"), borderRadius: "4px", padding: "10px 16px", color: loading ? "#222" : activeAgent.color, cursor: loading ? "not-allowed" : "pointer", fontSize: "11px", letterSpacing: "1px", fontFamily: "inherit" }}>
+          style={{ flex: 1, background: "#0e1928", border: "1px solid #1e3050", borderRadius: "4px", padding: "10px 14px", color: "#d0e8ff", fontSize: "12px", outline: "none", fontFamily: "inherit" }} />
+        <button onClick={sendMessage} disabled={loading || !input.trim()} style={{ background: loading ? "#0e1928" : activeAgent.color + "22", border: "1px solid " + (loading ? "#1e3050" : activeAgent.color + "99"), borderRadius: "4px", padding: "10px 16px", color: loading ? "#2a4060" : activeAgent.color, cursor: loading ? "not-allowed" : "pointer", fontSize: "11px", letterSpacing: "1px", fontFamily: "inherit" }}>
           SEND
         </button>
       </div>

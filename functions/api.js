@@ -356,7 +356,7 @@ export default {
     // Origin check helper — only fixitagent.ai allowed for sensitive endpoints
     const origin = request.headers.get("Origin") || "";
     const referer = request.headers.get("Referer") || "";
-    const ALLOWED = ["https://fixitagent.ai", "https://www.fixitagent.ai"];
+    const ALLOWED = ["https://fixitagent.ai", "https://agent9.rojasjay.workers.dev"];
     const fromSite = ALLOWED.some(a => origin.startsWith(a) || referer.startsWith(a));
 
     const sessionSecret = env.STRIPE_WEBHOOK_SECRET || "fx-fallback-secret";

@@ -1,0 +1,8 @@
+{
+  "name": "agent9",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

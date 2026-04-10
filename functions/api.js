@@ -301,6 +301,17 @@ function isRateLimited(ip, limit = 30, windowMs = 60000) {
   return { limited: false, firstHit: false };
 }
 
+async function alertSecurityBreach(env, type, details) {
+  if (!env.SLACK_WEBHOOK_URL) return;
+  await fetch(env.SLACK_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: `🚨 <!channel> *SECURITY ALERT — ${type}*\n${details}\n*Time:* ${new Date().toUTCString()}`
+    })
+  }).catch(() => {});
+}
+
 export default {
   async scheduled(event, env) {
     const now = new Date().toUTCString();
@@ -603,7 +614,7 @@ export default {
       const claudeData = await claudeResponse.json();
       return new Response(JSON.stringify(claudeData), {
         status: claudeResponse.status,
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
       });
     }
 
@@ -648,9 +659,9 @@ export default {
       if (env.STRIPE_WEBHOOK_SECRET) {
         const valid = await verifyStripeSignature(rawBody, sig || "", env.STRIPE_WEBHOOK_SECRET);
         if (!valid) {
-        await alertSecurityBreach(env, "INVALID STRIPE SIGNATURE", `IP: ${ip}\nPossible webhook forgery attempt`);
-        return new Response("Invalid signature", { status: 400 });
-      }
+          await alertSecurityBreach(env, "INVALID STRIPE SIGNATURE", `IP: ${ip}\nPossible webhook forgery attempt`);
+          return new Response("Invalid signature", { status: 400 });
+        }
       }
 
       let event;

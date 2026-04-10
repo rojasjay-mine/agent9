@@ -102,6 +102,7 @@ First paying customer. Solo $29/mo, Starter $79/mo, Pro $299/mo. Site live, Stri
 - Added 3-part security section to landing page: Authentication, Data Isolation, Request Integrity
 - Redesigned /agents UI — light Tron color scheme (white/steel-blue), was appearing as black page
 - Added agent taglines to empty state (e.g. "Paste the error. I'll diagnose it.")
-- GitHub Actions deploy is currently FAILING — CLOUDFLARE_API_TOKEN secret needs to be refreshed in GitHub repo settings
+- Fixed CI deploy root cause: .assetsignore added to prevent wrangler from uploading node_modules as static assets (was causing every deploy to fail since npm install step was added)
+- CLOUDFLARE_API_TOKEN was also refreshed in GitHub repo secrets
 - Dev branch: `claude/catch-up-xaAdf` — all changes committed and pushed, main is up to date
 

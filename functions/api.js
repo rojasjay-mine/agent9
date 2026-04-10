@@ -4,33 +4,64 @@ const AGENTS_HTML = `<!DOCTYPE html>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FX Agents</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0c1220; color: #c8d8f0; font-family: 'Courier New', monospace; }
+  body {
+    background: #eaf3fb;
+    color: #1a3550;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    background-image: linear-gradient(rgba(0,160,220,0.06) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,160,220,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #0c1220; }
-  ::-webkit-scrollbar-thumb { background: #1e3050; border-radius: 2px; }
-  input::placeholder { color: #3a5070; }
+  ::-webkit-scrollbar-track { background: #dceefa; }
+  ::-webkit-scrollbar-thumb { background: #90bcd8; border-radius: 2px; }
+  input::placeholder { color: #90aec8; }
+  #loading-screen {
+    position: fixed; inset: 0; background: #eaf3fb;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace; font-size: 13px;
+    color: #0088cc; letter-spacing: 3px; z-index: 999;
+  }
 </style>
 </head>
 <body>
+<div id="loading-screen">LOADING AGENTS...</div>
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useRef, useEffect } = React;
+
+// Hide loading screen once React renders
+document.getElementById('loading-screen').style.display = 'none';
+
+const C = {
+  bg: "#eaf3fb",
+  panel: "#ffffff",
+  border: "#c0d8ee",
+  borderLight: "#dceefa",
+  text: "#1a3550",
+  textDim: "#6090b8",
+  textMid: "#3a6080",
+  cyan: "#0088cc",
+  cyanLight: "#e0f2fc",
+};
+
 const AGENTS = [
-  { id: "webhook-doctor", name: "Webhook Doctor", icon: "🩺", color: "#ff4444", role: "Diagnoses 405 errors, POST handling, Cloudflare Pages function syntax", system: "You are Webhook Doctor, an expert in Cloudflare Pages Functions, REST APIs, and webhook debugging. You specialize in fixing 405 Method Not Allowed errors, POST request handling, and Cloudflare Pages function syntax. Be concise, numbered steps. Give exact code fixes." },
-  { id: "cloudflare-copilot", name: "Cloudflare Copilot", icon: "☁️", color: "#f6821f", role: "Step-by-step Cloudflare Pages & Workers navigation", system: "You are Cloudflare Copilot, an expert in Cloudflare Pages, Workers, DNS, environment variables, and the 2026 Cloudflare dashboard UI. Give exact step-by-step navigation instructions. Be precise about UI locations. Never guess." },
-  { id: "code-surgeon", name: "Code Surgeon", icon: "🔬", color: "#00ff88", role: "Rewrites and fixes JS for Cloudflare Pages Functions", system: "You are Code Surgeon, an expert JavaScript developer specializing in Cloudflare Pages Functions syntax. You rewrite functions/api.js to work correctly on Pages not Workers. Output clean, complete, copy-paste-ready code. No explanations unless asked." },
-  { id: "slack-wrangler", name: "Slack Wrangler", icon: "💬", color: "#9b59b6", role: "Slack webhook setup, rotation, and testing", system: "You are Slack Wrangler, an expert in Slack Incoming Webhooks, Slack App configuration, webhook rotation, and testing via Hoppscotch. Give exact numbered steps. Understand security best practices around credential rotation." },
-  { id: "deploy-commander", name: "Deploy Commander", icon: "🚀", color: "#0070f3", role: "Manual deploy sequences for Cloudflare Pages via GitHub", system: "You are Deploy Commander, an expert in manual deployment workflows for Cloudflare Pages using GitHub. Specialize in: edit file on GitHub, commit, trigger manual redeploy on Cloudflare Pages. Give numbered steps, exact file paths, flag ordering errors." },
-  { id: "error-analyst", name: "Error Analyst", icon: "🔍", color: "#ffcc00", role: "Reads error logs and gives root-cause fixes", system: "You are Error Analyst, an expert at reading raw error logs, HTTP responses, and stack traces. When given error output, immediately identify root cause and give a numbered fix. Direct, no hedging." },
-  { id: "tiktok-brain", name: "TikTok Brain", icon: "🎵", color: "#ff0050", role: "Organic TikTok strategy for mouth tape dropshipping", system: "You are TikTok Brain, an expert in faceless organic TikTok content strategy for dropshipping. Specialize in mouth tape / sleep strip niche. Know hook formulas, content angles, trending sounds, drive traffic without showing a face. Be tactical." },
-  { id: "substack-ghost", name: "Substack Ghost", icon: "✍️", color: "#ff6719", role: "Drafts A.I. Can Teach It newsletter content", system: "You are Substack Ghost, ghostwriter for A.I. Can Teach It, a beginner AI newsletter. Schedule: Thursdays. Tone: simple, practical. Write welcome emails, issue drafts, subject lines, CTAs. Faceless brand." },
-  { id: "env-guardian", name: "ENV Guardian", icon: "🔐", color: "#8b5cf6", role: "Manages environment variables and credential security", system: "You are ENV Guardian, expert in secure credential management for Cloudflare Pages, API keys, Slack webhooks. Guide rotation, storage in Cloudflare Pages Settings, security hygiene after exposure. Never ask for actual keys." },
-  { id: "fx-strategist", name: "FX Strategist", icon: "🧠", color: "#06b6d4", role: "Big picture FX brand and revenue strategy", system: "You are FX Strategist, business brain behind the FX brand fixitagent.ai. See across: Agent9, mouth tape dropshipping, A.I. Can Teach It Substack. Find revenue bridges, sequencing gaps, overlooked angles. Direct, contrarian when warranted." },
+  { id: "webhook-doctor", name: "Webhook Doctor", icon: "🩺", color: "#e03030", role: "Diagnoses 405 errors, POST handling, Cloudflare Pages function syntax", system: "You are Webhook Doctor, an expert in Cloudflare Pages Functions, REST APIs, and webhook debugging. You specialize in fixing 405 Method Not Allowed errors, POST request handling, and Cloudflare Pages function syntax. Be concise, numbered steps. Give exact code fixes." },
+  { id: "cloudflare-copilot", name: "Cloudflare Copilot", icon: "☁️", color: "#d06010", role: "Step-by-step Cloudflare Pages & Workers navigation", system: "You are Cloudflare Copilot, an expert in Cloudflare Pages, Workers, DNS, environment variables, and the 2026 Cloudflare dashboard UI. Give exact step-by-step navigation instructions. Be precise about UI locations. Never guess." },
+  { id: "code-surgeon", name: "Code Surgeon", icon: "🔬", color: "#008844", role: "Rewrites and fixes JS for Cloudflare Pages Functions", system: "You are Code Surgeon, an expert JavaScript developer specializing in Cloudflare Pages Functions syntax. You rewrite functions/api.js to work correctly on Pages not Workers. Output clean, complete, copy-paste-ready code. No explanations unless asked." },
+  { id: "slack-wrangler", name: "Slack Wrangler", icon: "💬", color: "#7040c0", role: "Slack webhook setup, rotation, and testing", system: "You are Slack Wrangler, an expert in Slack Incoming Webhooks, Slack App configuration, webhook rotation, and testing via Hoppscotch. Give exact numbered steps. Understand security best practices around credential rotation." },
+  { id: "deploy-commander", name: "Deploy Commander", icon: "🚀", color: "#0055cc", role: "Manual deploy sequences for Cloudflare Pages via GitHub", system: "You are Deploy Commander, an expert in manual deployment workflows for Cloudflare Pages using GitHub. Specialize in: edit file on GitHub, commit, trigger manual redeploy on Cloudflare Pages. Give numbered steps, exact file paths, flag ordering errors." },
+  { id: "error-analyst", name: "Error Analyst", icon: "🔍", color: "#997700", role: "Reads error logs and gives root-cause fixes", system: "You are Error Analyst, an expert at reading raw error logs, HTTP responses, and stack traces. When given error output, immediately identify root cause and give a numbered fix. Direct, no hedging." },
+  { id: "tiktok-brain", name: "TikTok Brain", icon: "🎵", color: "#cc0040", role: "Organic TikTok strategy for mouth tape dropshipping", system: "You are TikTok Brain, an expert in faceless organic TikTok content strategy for dropshipping. Specialize in mouth tape / sleep strip niche. Know hook formulas, content angles, trending sounds, drive traffic without showing a face. Be tactical." },
+  { id: "substack-ghost", name: "Substack Ghost", icon: "✍️", color: "#cc4400", role: "Drafts A.I. Can Teach It newsletter content", system: "You are Substack Ghost, ghostwriter for A.I. Can Teach It, a beginner AI newsletter. Schedule: Thursdays. Tone: simple, practical. Write welcome emails, issue drafts, subject lines, CTAs. Faceless brand." },
+  { id: "env-guardian", name: "ENV Guardian", icon: "🔐", color: "#6030b0", role: "Manages environment variables and credential security", system: "You are ENV Guardian, expert in secure credential management for Cloudflare Pages, API keys, Slack webhooks. Guide rotation, storage in Cloudflare Pages Settings, security hygiene after exposure. Never ask for actual keys." },
+  { id: "fx-strategist", name: "FX Strategist", icon: "🧠", color: "#0088cc", role: "Big picture FX brand and revenue strategy", system: "You are FX Strategist, business brain behind the FX brand fixitagent.ai. See across: Agent9, mouth tape dropshipping, A.I. Can Teach It Substack. Find revenue bridges, sequencing gaps, overlooked angles. Direct, contrarian when warranted." },
 ];
 const STORAGE_KEY = "fx-agents-v1";
 const loadHistory = () => { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; } };
@@ -45,7 +76,6 @@ function App() {
   const current = messages[activeAgent.id] || [];
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [current, loading]);
 
-  // Fetch memory from server on mount — server is source of truth
   useEffect(() => {
     fetch("/memory")
       .then(r => r.ok ? r.json() : null)
@@ -63,7 +93,6 @@ function App() {
     setMessages(prev => {
       const next = { ...prev, [id]: msgs };
       saveHistory(next);
-      // Persist to server memory
       fetch("/memory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,6 +101,7 @@ function App() {
       return next;
     });
   };
+
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
     const userMsg = { role: "user", content: input.trim() };
@@ -89,27 +119,29 @@ function App() {
       const reply = data.content?.[0]?.text || "No response.";
       updateMessages(activeAgent.id, [...updated, { role: "assistant", content: reply }]);
     } catch {
-      updateMessages(activeAgent.id, [...updated, { role: "assistant", content: "API error." }]);
+      updateMessages(activeAgent.id, [...updated, { role: "assistant", content: "Connection error. Please try again." }]);
     }
     setLoading(false);
   };
+
   const S = {
-    header: { padding: "14px 20px", borderBottom: "1px solid #1e3050", display: "flex", alignItems: "center", gap: "10px" },
-    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid #172840", scrollbarWidth: "none" },
-    role: { padding: "6px 16px", fontSize: "10px", color: "#3a5878", borderBottom: "1px solid #172840", letterSpacing: "1px" },
-    msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", minHeight: "300px", maxHeight: "calc(100vh - 200px)" },
-    inputRow: { padding: "12px 16px", borderTop: "1px solid #172840", display: "flex", gap: "8px" },
+    header: { padding: "12px 20px", borderBottom: "1px solid " + C.border, background: C.panel, display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 1px 4px rgba(0,100,180,0.08)" },
+    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid " + C.borderLight, background: C.panel, scrollbarWidth: "none" },
+    role: { padding: "5px 16px", fontSize: "10px", color: C.textDim, borderBottom: "1px solid " + C.borderLight, background: "#f4f9fd", letterSpacing: "1px" },
+    msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", minHeight: "300px", maxHeight: "calc(100vh - 210px)", background: C.bg },
+    inputRow: { padding: "12px 16px", borderTop: "1px solid " + C.border, background: C.panel, display: "flex", gap: "8px" },
   };
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={S.header}>
-        <span style={{ fontSize: "11px", color: "#4a6a8a", letterSpacing: "3px" }}>FX</span>
-        <span style={{ color: "#2a4060" }}>|</span>
-        <span style={{ fontSize: "11px", color: activeAgent.color, letterSpacing: "2px" }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</span>
+        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "13px", fontWeight: 700, color: C.cyan, letterSpacing: "2px" }}>FX</span>
+        <span style={{ color: C.border }}>|</span>
+        <span style={{ fontSize: "11px", color: activeAgent.color, letterSpacing: "1px", fontWeight: 500 }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
-          {memoryStatus && <span style={{ fontSize: "9px", color: "#2a6a3a", letterSpacing: "1px" }}>MEM:{memoryStatus}</span>}
-          <span style={{ fontSize: "9px", color: "#2a5a3a", letterSpacing: "1px" }}>SAVED</span>
-          <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid #1e3050", borderRadius: "3px", padding: "3px 8px", color: "#4a6a8a", fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
+          {memoryStatus && <span style={{ fontSize: "9px", color: "#2a8a4a", letterSpacing: "1px", background: "#e8f8ee", padding: "2px 6px", border: "1px solid #a8d8b8" }}>MEM:{memoryStatus}</span>}
+          <a href="/logout" style={{ fontSize: "9px", color: C.textDim, letterSpacing: "1px", textDecoration: "none" }}>LOGOUT</a>
+          <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: "3px", padding: "3px 8px", color: C.textDim, fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
         </div>
       </div>
       <div style={S.tabs}>
@@ -117,9 +149,9 @@ function App() {
           const hasHistory = (messages[a.id] || []).length > 0;
           const isActive = activeAgent.id === a.id;
           return (
-            <button key={a.id} onClick={() => setActiveAgent(a)} style={{ flexShrink: 0, background: isActive ? "#102040" : "transparent", border: "1px solid " + (isActive ? a.color : hasHistory ? "#2a4060" : "#1a3050"), borderRadius: "4px", padding: "5px 11px", cursor: "pointer", color: isActive ? a.color : hasHistory ? "#7a9ab8" : "#3a5878", fontSize: "10px", letterSpacing: "1px", whiteSpace: "nowrap", fontFamily: "inherit", position: "relative" }}>
+            <button key={a.id} onClick={() => setActiveAgent(a)} style={{ flexShrink: 0, background: isActive ? a.color + "14" : "transparent", border: "1px solid " + (isActive ? a.color : hasHistory ? "#90b8d8" : C.borderLight), borderRadius: "4px", padding: "5px 11px", cursor: "pointer", color: isActive ? a.color : hasHistory ? C.textMid : C.textDim, fontSize: "10px", letterSpacing: "1px", whiteSpace: "nowrap", fontFamily: "inherit", position: "relative", fontWeight: isActive ? 500 : 400 }}>
               {a.icon} {a.name}
-              {hasHistory && !isActive && <span style={{ position: "absolute", top: "3px", right: "3px", width: "4px", height: "4px", borderRadius: "50%", background: a.color, opacity: 0.7 }} />}
+              {hasHistory && !isActive && <span style={{ position: "absolute", top: "3px", right: "3px", width: "4px", height: "4px", borderRadius: "50%", background: a.color }} />}
             </button>
           );
         })}
@@ -128,25 +160,34 @@ function App() {
       <div style={S.msgs}>
         {current.length === 0 && (
           <div style={{ textAlign: "center", marginTop: "60px" }}>
-            <div style={{ fontSize: "28px" }}>{activeAgent.icon}</div>
-            <div style={{ fontSize: "10px", marginTop: "10px", color: activeAgent.color + "55", letterSpacing: "2px" }}>{activeAgent.name} ready</div>
+            <div style={{ fontSize: "36px" }}>{activeAgent.icon}</div>
+            <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "11px", marginTop: "12px", color: activeAgent.color, letterSpacing: "2px" }}>{activeAgent.name.toUpperCase()}</div>
+            <div style={{ fontSize: "11px", marginTop: "6px", color: C.textDim }}>Ready. Ask anything.</div>
           </div>
         )}
         {current.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-            <div style={{ maxWidth: "84%", background: m.role === "user" ? "#111e35" : "#0e1928", border: "1px solid " + (m.role === "user" ? activeAgent.color + "50" : "#1e3050"), borderRadius: "5px", padding: "10px 14px", fontSize: "12px", lineHeight: "1.65", color: m.role === "user" ? "#d0e8ff" : "#b0c8e8", whiteSpace: "pre-wrap" }}>
-              {m.role === "assistant" && <div style={{ fontSize: "9px", color: activeAgent.color, marginBottom: "6px", letterSpacing: "2px" }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</div>}
+            <div style={{ maxWidth: "84%", background: m.role === "user" ? C.cyanLight : C.panel, border: "1px solid " + (m.role === "user" ? C.cyan + "60" : C.border), borderRadius: "6px", padding: "10px 14px", fontSize: "13px", lineHeight: "1.7", color: C.text, whiteSpace: "pre-wrap", boxShadow: "0 1px 3px rgba(0,100,180,0.07)" }}>
+              {m.role === "assistant" && <div style={{ fontSize: "9px", color: activeAgent.color, marginBottom: "7px", letterSpacing: "2px", fontWeight: 500 }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</div>}
               {m.content}
             </div>
           </div>
         ))}
-        {loading && <div style={{ color: activeAgent.color + "66", fontSize: "11px", letterSpacing: "2px" }}>{activeAgent.icon} thinking...</div>}
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: activeAgent.color, fontSize: "11px", letterSpacing: "1px" }}>
+            <span>{activeAgent.icon}</span>
+            <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>Thinking...</span>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
       <div style={S.inputRow}>
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()} placeholder={"Ask " + activeAgent.name + "..."}
-          style={{ flex: 1, background: "#0e1928", border: "1px solid #1e3050", borderRadius: "4px", padding: "10px 14px", color: "#d0e8ff", fontSize: "12px", outline: "none", fontFamily: "inherit" }} />
-        <button onClick={sendMessage} disabled={loading || !input.trim()} style={{ background: loading ? "#0e1928" : activeAgent.color + "22", border: "1px solid " + (loading ? "#1e3050" : activeAgent.color + "99"), borderRadius: "4px", padding: "10px 16px", color: loading ? "#2a4060" : activeAgent.color, cursor: loading ? "not-allowed" : "pointer", fontSize: "11px", letterSpacing: "1px", fontFamily: "inherit" }}>
+          style={{ flex: 1, background: "#f4f9fd", border: "1px solid " + C.border, borderRadius: "4px", padding: "10px 14px", color: C.text, fontSize: "13px", outline: "none", fontFamily: "inherit", transition: "border-color 0.2s" }}
+          onFocus={e => e.target.style.borderColor = C.cyan}
+          onBlur={e => e.target.style.borderColor = C.border}
+        />
+        <button onClick={sendMessage} disabled={loading || !input.trim()} style={{ background: loading || !input.trim() ? "#f0f4f8" : activeAgent.color, border: "1px solid " + (loading || !input.trim() ? C.border : activeAgent.color), borderRadius: "4px", padding: "10px 18px", color: loading || !input.trim() ? C.textDim : "#ffffff", cursor: loading || !input.trim() ? "not-allowed" : "pointer", fontSize: "11px", letterSpacing: "1px", fontFamily: "inherit", fontWeight: 500, transition: "all 0.15s" }}>
           SEND
         </button>
       </div>
@@ -155,6 +196,9 @@ function App() {
 }
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
+<style>
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
 </body>
 </html>`;
 

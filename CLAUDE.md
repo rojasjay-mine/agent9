@@ -86,23 +86,5 @@ First paying customer. Solo $29/mo, Starter $79/mo, Pro $299/mo. Site live, Stri
 - Account ID: `6b2fdf0e036db269314e45966c0ff757`
 - To deploy: merge to main or push any commit to main
 - To deploy from Claude session: `npx wrangler deploy` (requires CLOUDFLARE_API_TOKEN in env)
-
-## Last session
-- Landing page copy rewrite — "Ten minds. One stack. No explanations." hero
-- Agents UI brightened — deep navy instead of near-black, readable borders/text
-- Merged all feature branches to main (30+ commits now live on GitHub)
-- Fixed deploy pipeline: added package.json, GitHub Actions workflow, fixed wrangler $schema
-- CLOUDFLARE_API_TOKEN added to GitHub secrets — auto-deploy on push to main now works
-
-## Last session (2026-04-10)
-- Fixed missing `alertSecurityBreach` function — was causing ReferenceError on all security events (rate limit, unauthorized access, oversized payload, invalid Stripe sig)
-- Added SECURITY_HEADERS to /api proxy response
-- Added `.mcp.json` for n8n MCP server (project-scoped, uses N8N_API_KEY + N8N_BASE_URL env vars)
-- Rewrote landing page copy — professional tone, no slang, polite/tech-savvy throughout
-- Added 3-part security section to landing page: Authentication, Data Isolation, Request Integrity
-- Redesigned /agents UI — light Tron color scheme (white/steel-blue), was appearing as black page
-- Added agent taglines to empty state (e.g. "Paste the error. I'll diagnose it.")
-- Fixed CI deploy root cause: .assetsignore added to prevent wrangler from uploading node_modules as static assets (was causing every deploy to fail since npm install step was added)
-- CLOUDFLARE_API_TOKEN was also refreshed in GitHub repo secrets
-- Dev branch: `claude/catch-up-xaAdf` — all changes committed and pushed, main is up to date
+- `.assetsignore` excludes node_modules/functions/config from static asset upload (critical — without it deploys fail)
 

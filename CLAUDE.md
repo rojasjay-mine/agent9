@@ -94,3 +94,14 @@ First paying customer. Solo $29/mo, Starter $79/mo, Pro $299/mo. Site live, Stri
 - Fixed deploy pipeline: added package.json, GitHub Actions workflow, fixed wrangler $schema
 - CLOUDFLARE_API_TOKEN added to GitHub secrets — auto-deploy on push to main now works
 
+## Last session (2026-04-10)
+- Fixed missing `alertSecurityBreach` function — was causing ReferenceError on all security events (rate limit, unauthorized access, oversized payload, invalid Stripe sig)
+- Added SECURITY_HEADERS to /api proxy response
+- Added `.mcp.json` for n8n MCP server (project-scoped, uses N8N_API_KEY + N8N_BASE_URL env vars)
+- Rewrote landing page copy — professional tone, no slang, polite/tech-savvy throughout
+- Added 3-part security section to landing page: Authentication, Data Isolation, Request Integrity
+- Redesigned /agents UI — light Tron color scheme (white/steel-blue), was appearing as black page
+- Added agent taglines to empty state (e.g. "Paste the error. I'll diagnose it.")
+- GitHub Actions deploy is currently FAILING — CLOUDFLARE_API_TOKEN secret needs to be refreshed in GitHub repo settings
+- Dev branch: `claude/catch-up-xaAdf` — all changes committed and pushed, main is up to date
+

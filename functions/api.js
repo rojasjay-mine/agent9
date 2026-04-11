@@ -548,6 +548,20 @@ export default {
       });
     }
 
+    // GET /test-slack — owner-only, fires a test message to Slack
+    if (url.pathname === "/test-slack" && request.method === "GET") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return new Response("Forbidden", { status: 403 });
+      if (!env.SLACK_WEBHOOK_URL) return new Response("SLACK_WEBHOOK_URL not set", { status: 503 });
+      const res = await fetch(env.SLACK_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: `🧪 *Agent9 Slack Test*\nWorker is online and Slack is connected.\n*Time:* ${new Date().toUTCString()}` })
+      });
+      return new Response(res.ok ? "Slack OK" : `Slack error: ${res.status}`, { status: res.ok ? 200 : 500 });
+    }
+
     // GET /logout — clear cookie and redirect home
     if (url.pathname === "/logout") {
       return new Response(null, {

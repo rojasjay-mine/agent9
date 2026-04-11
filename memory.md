@@ -25,3 +25,20 @@
 - Added /test-slack endpoint (owner-only) — visit fixitagent.ai/test-slack to verify Slack webhook
 - Customer post-payment flow: Stripe checkout → /verify-checkout sets KV + auth cookie → lands on /agents (no separate login needed)
 - SLACK_WEBHOOK_URL still needs to be added to Cloudflare env vars if Slack test fails
+
+## 2026-04-11 (continued)
+- Built the real product: authenticated alert layer
+  - POST /alert — X-FX-Key + HMAC-SHA256 signature + timestamp replay protection
+  - Per-customer API keys in KV (apikey:{key} → {email, slack_webhook, name, secret})
+  - Alert routing to 10 specialized agents by keyword matching
+  - Fix delivered to customer's own Slack webhook
+  - Security breach alerts on invalid key/signature
+- POST /admin/provision (owner-only) — generates API key + secret for a customer
+- 10 new engineering agents added to chat UI + alert routing:
+  Pipeline Doctor, K8s Medic, Log Surgeon, Cost Sentinel, SLO Watcher,
+  DB Analyst, Security Auditor, API Guardian, Data Pipeline Doctor, Incident Commander
+- Now 20 agents total in the chat UI
+- Dark Tron theme applied to /agents — matches login page (navy #04080f, cyan #00c8ff)
+- agents.html added to .assetsignore — was being served as static file bypassing worker
+- Customer onboarding flow: POST /admin/provision → get key+secret → customer points monitoring at /alert → fix auto-posts to their Slack
+- Context approaching limit — stop and save before next session

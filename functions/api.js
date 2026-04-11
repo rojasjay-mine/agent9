@@ -65,6 +65,16 @@ const AGENTS = [
   { id: "substack-ghost", name: "Substack Ghost", icon: "✍️", color: "#fb923c", tagline: "Give me the topic. I'll write the issue.", role: "Drafts A.I. Can Teach It newsletter content", system: "You are Substack Ghost, ghostwriter for A.I. Can Teach It, a beginner AI newsletter. Schedule: Thursdays. Tone: simple, practical. Write welcome emails, issue drafts, subject lines, CTAs. Faceless brand." },
   { id: "env-guardian", name: "ENV Guardian", icon: "🔐", color: "#c084fc", tagline: "Credential question? I can handle it.", role: "Manages environment variables and credential security", system: "You are ENV Guardian, expert in secure credential management for Cloudflare Pages, API keys, Slack webhooks. Guide rotation, storage in Cloudflare Pages Settings, security hygiene after exposure. Never ask for actual keys." },
   { id: "fx-strategist", name: "FX Strategist", icon: "🧠", color: "#00c8ff", tagline: "What's the problem? I'll find the angle.", role: "Big picture FX brand and revenue strategy", system: "You are FX Strategist, business brain behind the FX brand fixitagent.ai. See across: Agent9, mouth tape dropshipping, A.I. Can Teach It Substack. Find revenue bridges, sequencing gaps, overlooked angles. Direct, contrarian when warranted." },
+  { id: "pipeline-doctor", name: "Pipeline Doctor", icon: "⚙️", color: "#60a5fa", tagline: "CI failing? Tell me the step.", role: "CI/CD failures — GitHub Actions, Jenkins, CircleCI", system: "You are Pipeline Doctor, expert in CI/CD systems including GitHub Actions, Jenkins, CircleCI, and GitLab CI. When given a pipeline failure, identify the exact step that failed, root cause, and provide a numbered fix. Be concise and actionable." },
+  { id: "k8s-medic", name: "K8s Medic", icon: "🐳", color: "#38bdf8", tagline: "Pod down? I'll get it back up.", role: "Kubernetes — pod crashes, OOMKills, deployments", system: "You are K8s Medic, expert in Kubernetes. Diagnose pod crashes, OOMKills, deployment failures, node issues, and resource exhaustion. Give exact kubectl commands to investigate and fix." },
+  { id: "log-surgeon", name: "Log Surgeon", icon: "📋", color: "#a3e635", tagline: "Paste the logs. I'll find the signal.", role: "Log analysis — Stackdriver, CloudWatch, any format", system: "You are Log Surgeon, expert at parsing error logs, stack traces, and anomaly patterns from any system. Identify the root cause from log data and give a precise fix." },
+  { id: "cost-sentinel", name: "Cost Sentinel", icon: "💰", color: "#fbbf24", tagline: "Spend spike? I'll find the culprit.", role: "Cloud cost anomalies — GCP, AWS, Azure", system: "You are Cost Sentinel, expert in cloud cost anomalies across GCP, AWS, and Azure. Identify what caused the spike, which service is responsible, and how to stop and prevent it." },
+  { id: "slo-watcher", name: "SLO Watcher", icon: "📊", color: "#f472b6", tagline: "SLO breached? I'll find the cause.", role: "SLO/SLA breaches, error budgets, latency spikes", system: "You are SLO Watcher, expert in SLOs, SLAs, error budgets, and latency analysis. When given an SLO breach, diagnose what is causing the degradation and give exact remediation steps." },
+  { id: "db-analyst", name: "DB Analyst", icon: "🗄️", color: "#34d399", tagline: "DB slow? I'll find the query.", role: "Database issues — Postgres, MySQL, Redis, Mongo", system: "You are DB Analyst, expert in database performance across PostgreSQL, MySQL, MongoDB, and Redis. Diagnose slow queries, connection pool exhaustion, replication lag, and index issues. Give exact queries and config changes to fix." },
+  { id: "security-auditor", name: "Security Auditor", icon: "🛡️", color: "#f87171", tagline: "Security alert? I'll assess and contain.", role: "IAM, auth failures, intrusion detection, cloud security", system: "You are Security Auditor, expert in cloud security, IAM misconfigurations, auth failures, and intrusion detection. Assess the threat level and provide immediate containment and remediation steps." },
+  { id: "api-guardian", name: "API Guardian", icon: "🔗", color: "#818cf8", tagline: "API down? I'll trace the failure.", role: "API failures, rate limits, upstream timeouts, 5xx errors", system: "You are API Guardian, expert in API failures, rate limiting, upstream timeouts, and gateway errors. Diagnose what is failing and why, and give exact steps to restore service and prevent recurrence." },
+  { id: "data-pipeline-doctor", name: "Data Pipeline Doctor", icon: "🔄", color: "#2dd4bf", tagline: "ETL broken? I'll find the break.", role: "ETL/ELT failures, schema drift, data quality issues", system: "You are Data Pipeline Doctor, expert in ETL/ELT failures, schema drift, data quality issues, and ingestion pipeline breakdowns. Diagnose the failure and give exact steps to restore the pipeline and prevent data loss." },
+  { id: "incident-commander", name: "Incident Commander", icon: "🎯", color: "#fb923c", tagline: "Multi-system down? I'll coordinate the response.", role: "Major incidents — multi-system correlation and response", system: "You are Incident Commander, a senior SRE who coordinates multi-system incidents. Identify all affected systems, establish a timeline, prioritize remediation, and give a clear incident response plan with immediate actions." },
 ];
 const STORAGE_KEY = "fx-agents-v1";
 const loadHistory = () => { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; } };
@@ -321,6 +331,73 @@ async function verifyStripeSignature(rawBody, sigHeader, secret) {
   const raw = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${rawBody}`));
   const computed = Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2, "0")).join("");
   return computed === sig;
+}
+
+// ── Alert agent routing ───────────────────────────────────────────────────────
+const ALERT_AGENTS = {
+  "pipeline-doctor": {
+    name: "Pipeline Doctor", icon: "⚙️",
+    system: "You are Pipeline Doctor, expert in CI/CD systems including GitHub Actions, Jenkins, CircleCI, and GitLab CI. When given a pipeline failure, identify the exact step that failed, root cause, and provide a numbered fix. Be concise and actionable. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "k8s-medic": {
+    name: "K8s Medic", icon: "🐳",
+    system: "You are K8s Medic, expert in Kubernetes. Diagnose pod crashes, OOMKills, deployment failures, node issues, and resource exhaustion. Give exact kubectl commands to investigate and fix. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "log-surgeon": {
+    name: "Log Surgeon", icon: "📋",
+    system: "You are Log Surgeon, expert at parsing error logs, stack traces, and anomaly patterns from any system. Identify the root cause from log data and give a precise fix. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "cost-sentinel": {
+    name: "Cost Sentinel", icon: "💰",
+    system: "You are Cost Sentinel, expert in cloud cost anomalies across GCP, AWS, and Azure. When given a spend alert, identify what caused the spike, which service or resource is responsible, and how to stop and prevent it. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "slo-watcher": {
+    name: "SLO Watcher", icon: "📊",
+    system: "You are SLO Watcher, expert in SLOs, SLAs, error budgets, and latency analysis. When given an SLO breach alert, diagnose what is causing the degradation and give exact remediation steps. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "db-analyst": {
+    name: "DB Analyst", icon: "🗄️",
+    system: "You are DB Analyst, expert in database performance across PostgreSQL, MySQL, MongoDB, and Redis. Diagnose slow queries, connection pool exhaustion, replication lag, and index issues. Give exact queries and config changes to fix. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "security-auditor": {
+    name: "Security Auditor", icon: "🛡️",
+    system: "You are Security Auditor, expert in cloud security, IAM misconfigurations, auth failures, and intrusion detection. When given a security alert, assess the threat level and provide immediate containment and remediation steps. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "api-guardian": {
+    name: "API Guardian", icon: "🔗",
+    system: "You are API Guardian, expert in API failures, rate limiting, upstream timeouts, and gateway errors. Diagnose what is failing and why, and give exact steps to restore service and prevent recurrence. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "data-pipeline-doctor": {
+    name: "Data Pipeline Doctor", icon: "🔄",
+    system: "You are Data Pipeline Doctor, expert in ETL/ELT failures, schema drift, data quality issues, and ingestion pipeline breakdowns. Diagnose the failure and give exact steps to restore the pipeline and prevent data loss. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "incident-commander": {
+    name: "Incident Commander", icon: "🎯",
+    system: "You are Incident Commander, a senior SRE who coordinates multi-system incidents. Given an alert, identify all affected systems, establish a timeline, prioritize remediation, and give a clear incident response plan. Format: SEVERITY / AFFECTED SYSTEMS / IMPACT / IMMEDIATE ACTIONS / ROOT CAUSE INVESTIGATION."
+  },
+};
+
+function routeAlert(alert) {
+  const combined = [alert.type, alert.title, alert.source, alert.details].join(" ").toLowerCase();
+  if (/pipeline|ci[\s_-]?cd|deploy|github.action|jenkins|circleci|build.fail/.test(combined)) return ALERT_AGENTS["pipeline-doctor"];
+  if (/k8s|kubernetes|pod|container|oomkill|evict|node.not.ready|crashloop/.test(combined)) return ALERT_AGENTS["k8s-medic"];
+  if (/cost|spend|budget|billing|quota.exceed|usage.spike/.test(combined)) return ALERT_AGENTS["cost-sentinel"];
+  if (/slo|sla|error.budget|latency|p99|p95|error.rate/.test(combined)) return ALERT_AGENTS["slo-watcher"];
+  if (/database|postgres|mysql|mongo|redis|slow.query|replication|connection.pool/.test(combined)) return ALERT_AGENTS["db-analyst"];
+  if (/security|iam|permission|unauth|breach|intrusion|firewall|vuln/.test(combined)) return ALERT_AGENTS["security-auditor"];
+  if (/api|rate.limit|timeout|upstream|gateway|503|504/.test(combined)) return ALERT_AGENTS["api-guardian"];
+  if (/etl|schema.drift|data.quality|ingestion|pipeline/.test(combined)) return ALERT_AGENTS["data-pipeline-doctor"];
+  if (/log|error.spike|anomaly|stackdriver|cloudwatch/.test(combined)) return ALERT_AGENTS["log-surgeon"];
+  return ALERT_AGENTS["incident-commander"];
+}
+
+async function hmacHex(message, secret) {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const raw = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 const SECURITY_HEADERS = {
@@ -780,69 +857,115 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
-    // POST / — infrastructure alert handler (no origin check — external monitoring tools send alerts)
-    if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/alert")) {
+    // POST /alert — authenticated inbound alert from customer monitoring system
+    if (url.pathname === "/alert" && request.method === "POST") {
+      const apiKey = request.headers.get("X-FX-Key") || "";
+      const signature = request.headers.get("X-FX-Signature") || "";
+      const timestamp = request.headers.get("X-FX-Timestamp") || "";
+      const rawBody = await request.text();
+
+      // Filter GraphQL scanner probes
+      try { const p = JSON.parse(rawBody); if (p.query?.includes("__schema")) return new Response("OK", { status: 200 }); } catch {}
+
+      if (!apiKey) return new Response("Missing X-FX-Key header", { status: 401, headers: SECURITY_HEADERS });
+
+      const customerRaw = env.MEMORY ? await env.MEMORY.get(`apikey:${apiKey}`) : null;
+      if (!customerRaw) {
+        await alertSecurityBreach(env, "INVALID ALERT API KEY", `IP: ${ip}\nKey: ${apiKey.slice(0,8)}...`);
+        return new Response("Invalid API key", { status: 401, headers: SECURITY_HEADERS });
+      }
+      const customer = JSON.parse(customerRaw);
+
+      // Verify HMAC signature (timestamp within 5 min + body)
+      if (signature) {
+        const ts = parseInt(timestamp);
+        if (isNaN(ts) || Math.abs(Date.now() - ts) > 300000) {
+          return new Response("Timestamp expired", { status: 401, headers: SECURITY_HEADERS });
+        }
+        const expected = await hmacHex(`${timestamp}.${rawBody}`, customer.secret);
+        if (expected !== signature) {
+          await alertSecurityBreach(env, "INVALID ALERT SIGNATURE", `Customer: ${customer.email}\nIP: ${ip}`);
+          return new Response("Invalid signature", { status: 401, headers: SECURITY_HEADERS });
+        }
+      }
+
       let alert;
-      try {
-        alert = await request.json();
-      } catch {
-        return new Response("Invalid JSON", { status: 400 });
-      }
+      try { alert = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      if (!alert || Object.keys(alert).length === 0) return new Response("OK", { status: 200 });
 
-      // Filter junk: empty payloads and GraphQL scanner probes
-      const keys = Object.keys(alert);
-      if (keys.length === 0) return new Response("OK", { status: 200 });
-      if (alert.query && typeof alert.query === "string" && alert.query.includes("__schema")) {
-        return new Response("OK", { status: 200 });
-      }
+      // Route to correct agent
+      const agent = routeAlert(alert);
+      const alertText = alert.message || alert.details || alert.text || alert.description || JSON.stringify(alert);
 
-      const alertText = alert.message || alert.text || alert.description || JSON.stringify(alert);
-
-      // Claude diagnosis
-      let diagnosis = "No diagnosis available.";
+      // Claude analysis
+      let analysis = "Analysis unavailable.";
       if (env.ANTHROPIC_API_KEY) {
         try {
           const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": env.ANTHROPIC_API_KEY,
-              "anthropic-version": "2023-06-01",
-            },
+            headers: { "Content-Type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
             body: JSON.stringify({
               model: "claude-sonnet-4-6",
               max_tokens: 1000,
-              messages: [{
-                role: "user",
-                content: `You are Agent9, an elite infrastructure remediation AI. Analyze this alert, diagnose the root cause, and provide a clear fix.
-
-Alert:
-${alertText}
-
-Respond in this format:
-SEVERITY: [LOW / MEDIUM / CRITICAL]
-DIAGNOSIS: (what is wrong and why)
-RECOMMENDED FIX: (exact steps to resolve)`,
-              }],
+              system: agent.system,
+              messages: [{ role: "user", content: `Alert from ${customer.name}:\n\nTitle: ${alert.title || "Untitled"}\nSource: ${alert.source || "unknown"}\nSeverity: ${alert.severity || "unknown"}\n\nDetails:\n${alertText}` }],
             }),
           });
-          const claudeData = await claudeRes.json();
-          diagnosis = claudeData.content?.[0]?.text || diagnosis;
+          const d = await claudeRes.json();
+          analysis = d.content?.[0]?.text || analysis;
         } catch {}
       }
 
-      // Post to Slack
-      if (env.SLACK_WEBHOOK_URL) {
-        await fetch(env.SLACK_WEBHOOK_URL, {
+      // Deliver to customer's Slack
+      const severityEmoji = { critical: "🚨", medium: "⚠️", low: "ℹ️" }[(alert.severity||"").toLowerCase()] || "🔔";
+      const slackTarget = customer.slack_webhook || env.SLACK_WEBHOOK_URL;
+      if (slackTarget) {
+        await fetch(slackTarget, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: `🚨 *Agent9 Alert*\n\n*Alert:*\n${alertText}\n\n*Diagnosis:*\n${diagnosis}`,
-          }),
+            text: `${severityEmoji} *${agent.icon} ${agent.name}* — ${alert.title || "Alert"}\n*Customer:* ${customer.name}\n\n${analysis}\n\n_fixitagent.ai_`
+          })
         }).catch(() => {});
       }
 
-      return new Response("OK", { status: 200 });
+      return new Response(JSON.stringify({ ok: true, agent: agent.name }), {
+        headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
+      });
+    }
+
+    // POST /admin/provision — create customer API key + secret (owner only)
+    if (url.pathname === "/admin/provision" && request.method === "POST") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return new Response("Forbidden", { status: 403 });
+      let body;
+      try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      const { customer_email, slack_webhook, name } = body;
+      if (!customer_email) return new Response("customer_email required", { status: 400 });
+
+      const keyBytes = new Uint8Array(16);
+      const secretBytes = new Uint8Array(32);
+      crypto.getRandomValues(keyBytes);
+      crypto.getRandomValues(secretBytes);
+      const apiKey = "fxa_" + Array.from(keyBytes).map(b => b.toString(16).padStart(2,"0")).join("").slice(0,24);
+      const secret = Array.from(secretBytes).map(b => b.toString(16).padStart(2,"0")).join("");
+
+      if (env.MEMORY) {
+        await env.MEMORY.put(`apikey:${apiKey}`, JSON.stringify({
+          email: customer_email,
+          slack_webhook: slack_webhook || "",
+          name: name || customer_email,
+          secret,
+          created_at: new Date().toISOString(),
+        }));
+      }
+      return new Response(JSON.stringify({
+        api_key: apiKey,
+        secret,
+        endpoint: "https://fixitagent.ai/alert",
+        headers: { "X-FX-Key": apiKey, "X-FX-Signature": "HMAC-SHA256(timestamp.body, secret)", "X-FX-Timestamp": "Date.now()" }
+      }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
     }
 
     return env.ASSETS.fetch(request);

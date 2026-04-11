@@ -484,7 +484,7 @@ export default {
         } catch { stripeStatus = "Error"; }
       }
 
-      const adminHTML = \`<!DOCTYPE html>
+      const adminHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -522,15 +522,15 @@ export default {
   <div class="card">
     <h2>SYSTEM STATUS</h2>
     <div class="row"><span class="label">Worker</span><span class="val ok">Online</span></div>
-    <div class="row"><span class="label">KV Memory</span><span class="val \${kvStatus === 'OK' ? 'ok' : 'err'}">\${kvStatus}</span></div>
-    <div class="row"><span class="label">Stripe</span><span class="val \${stripeStatus === 'Connected' ? 'ok' : 'err'}">\${stripeStatus}</span></div>
-    <div class="row"><span class="label">Slack</span><span class="val \${slackStatus === 'Configured' ? 'ok' : 'err'}">\${slackStatus}</span></div>
-    <div class="row"><span class="label">Active Subscribers</span><span class="val ok">\${subCount}</span></div>
+    <div class="row"><span class="label">KV Memory</span><span class="val ${kvStatus === 'OK' ? 'ok' : 'err'}">${kvStatus}</span></div>
+    <div class="row"><span class="label">Stripe</span><span class="val ${stripeStatus === 'Connected' ? 'ok' : 'err'}">${stripeStatus}</span></div>
+    <div class="row"><span class="label">Slack</span><span class="val ${slackStatus === 'Configured' ? 'ok' : 'err'}">${slackStatus}</span></div>
+    <div class="row"><span class="label">Active Subscribers</span><span class="val ok">${subCount}</span></div>
   </div>
   <div class="card">
     <h2>SUBSCRIBERS</h2>
-    \${subscribers.length === 0 ? '<div style="color:#2a5070;font-size:13px">No active subscribers yet.</div>' :
-      subscribers.map(s => \`<div class="sub-item">\${s.email} — \${s.status}\${s.trial_end ? ' (trial until ' + s.trial_end + ')' : ''}</div>\`).join('')}
+    ${subscribers.length === 0 ? '<div style="color:#2a5070;font-size:13px">No active subscribers yet.</div>' :
+      subscribers.map(s => `<div class="sub-item">${s.email} — ${s.status}${s.trial_end ? ' (trial until ' + s.trial_end + ')' : ''}</div>`).join('')}
   </div>
   <div class="card">
     <h2>QUICK LINKS</h2>
@@ -542,7 +542,7 @@ export default {
   </div>
 </div>
 </body>
-</html>\`;
+</html>`;
       return new Response(adminHTML, {
         headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
       });

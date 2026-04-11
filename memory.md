@@ -15,3 +15,9 @@
   - Go to: dash.cloudflare.com → Workers & Pages → agent9 → Settings → Variables and Secrets
   - Add: ANTHROPIC_API_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SLACK_WEBHOOK_URL
 - Dev branch: `claude/catch-up-xaAdf`
+
+## 2026-04-11
+- Fixed agents chat not working — root cause was syntax error in adminHTML template literal (escaped backticks `\`` in plain JS scope — esbuild rejects this in wrangler 4.x)
+- Updated model ID: `claude-sonnet-4-20250514` → `claude-sonnet-4-6` (old ID was invalid)
+- Increased max_tokens: 1000 → 16000 for full agent responses
+- All 3 fixes deployed to main — agents confirmed working

@@ -70,7 +70,7 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 
 ## Conventions
 - No build step — keep frontend as inline template literal in api.js
-- Model: `claude-sonnet-4-20250514`
+- Model: `claude-sonnet-4-6`
 - KV key for memory: `fx-agents-memory`
 - Memory: server (KV) is source of truth, localStorage is cache only
 

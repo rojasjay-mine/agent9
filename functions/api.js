@@ -125,15 +125,15 @@ function App() {
   };
 
   const S = {
-    header: { padding: "12px 20px", borderBottom: "1px solid " + C.border, background: C.panel, display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 1px 4px rgba(0,100,180,0.08)" },
-    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid " + C.borderLight, background: C.panel, scrollbarWidth: "none" },
-    role: { padding: "5px 16px", fontSize: "10px", color: C.textDim, borderBottom: "1px solid " + C.borderLight, background: "#f4f9fd", letterSpacing: "1px" },
-    msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", minHeight: "300px", maxHeight: "calc(100vh - 210px)", background: C.bg },
-    inputRow: { padding: "12px 16px", borderTop: "1px solid " + C.border, background: C.panel, display: "flex", gap: "8px" },
+    header: { padding: "12px 20px", borderBottom: "1px solid " + C.border, background: C.panel, display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 1px 4px rgba(0,100,180,0.08)", flexShrink: 0 },
+    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid " + C.borderLight, background: C.panel, scrollbarWidth: "none", flexShrink: 0 },
+    role: { padding: "5px 16px", fontSize: "10px", color: C.textDim, borderBottom: "1px solid " + C.borderLight, background: "#f4f9fd", letterSpacing: "1px", flexShrink: 0 },
+    msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", background: C.bg },
+    inputRow: { padding: "12px 16px", borderTop: "1px solid " + C.border, background: C.panel, display: "flex", gap: "8px", flexShrink: 0 },
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={S.header}>
         <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "13px", fontWeight: 700, color: C.cyan, letterSpacing: "2px" }}>FX</span>
         <span style={{ color: C.border }}>|</span>

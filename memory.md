@@ -9,5 +9,9 @@
 - Redesigned /agents UI — light Tron color scheme (white/steel-blue), was appearing as black page
 - Added agent taglines to empty state (e.g. "Paste the error. I'll diagnose it.")
 - Fixed CI deploy: .assetsignore added to prevent wrangler from uploading node_modules as static assets
-- CLOUDFLARE_API_TOKEN refreshed in GitHub repo secrets — deploys now succeeding (13/13 runs green)
+- CLOUDFLARE_API_TOKEN refreshed in GitHub repo secrets — deploys now 13/13 green
+- Session memory moved to memory.md (separate from CLAUDE.md)
+- ANTHROPIC_API_KEY missing from Cloudflare worker env vars — agents chat not working until added
+  - Go to: dash.cloudflare.com → Workers & Pages → agent9 → Settings → Variables and Secrets
+  - Add: ANTHROPIC_API_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SLACK_WEBHOOK_URL
 - Dev branch: `claude/catch-up-xaAdf`

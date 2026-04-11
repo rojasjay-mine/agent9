@@ -21,3 +21,7 @@
 - Updated model ID: `claude-sonnet-4-20250514` → `claude-sonnet-4-6` (old ID was invalid)
 - Increased max_tokens: 1000 → 16000 for full agent responses
 - All 3 fixes deployed to main — agents confirmed working
+- Fixed /agents layout: height 100vh flex column, msgs flex:1, header/tabs/input flexShrink:0
+- Added /test-slack endpoint (owner-only) — visit fixitagent.ai/test-slack to verify Slack webhook
+- Customer post-payment flow: Stripe checkout → /verify-checkout sets KV + auth cookie → lands on /agents (no separate login needed)
+- SLACK_WEBHOOK_URL still needs to be added to Cloudflare env vars if Slack test fails

@@ -113,7 +113,7 @@ function App() {
       const res = await fetch("/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, system: activeAgent.system, messages: updated }),
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 16000, system: activeAgent.system, messages: updated }),
       });
       const data = await res.json();
       const reply = data.content?.[0]?.text || "No response.";
@@ -640,7 +640,7 @@ export default {
 
       const claudePayload = {
         model: model || "claude-sonnet-4-6",
-        max_tokens: max_tokens || 1000,
+        max_tokens: max_tokens || 16000,
         messages: messages || [],
       };
       if (system) claudePayload.system = system;

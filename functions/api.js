@@ -729,7 +729,7 @@ export default {
       const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
       if (email !== ownerEmail) return new Response("Forbidden", { status: 403 });
 
-      // Load provisioned keys for the dropdown
+      // Load provisioned keys for the dropdown — keys only, NO secrets in HTML
       let apiKeys = [];
       if (env.MEMORY) {
         try {
@@ -738,7 +738,7 @@ export default {
             const val = await env.MEMORY.get(k.name);
             if (val) {
               const d = JSON.parse(val);
-              apiKeys.push({ key: k.name.replace("apikey:", ""), name: d.name, email: d.email, secret: d.secret });
+              apiKeys.push({ key: k.name.replace("apikey:", ""), name: d.name, email: d.email });
             }
           }
         } catch {}
@@ -789,20 +789,10 @@ pre{background:#04080f;border:1px solid #0d2040;padding:14px;font-size:12px;whit
 <div class="card">
 <h2>CUSTOMER</h2>
 <label>SELECT CUSTOMER (provisioned)</label>
-<select id="customer-select" onchange="onCustomerChange()">
-  <option value="">— select or enter manually below —</option>
-  ${apiKeys.map(k => `<option value="${k.key}|${k.secret}">${k.name} (${k.email}) — ${k.key.slice(0,16)}...</option>`).join('')}
+<select id="customer-select">
+  <option value="">— select a customer —</option>
+  ${apiKeys.map(k => `<option value="${k.key}">${k.name} (${k.email}) — ${k.key.slice(0,16)}...</option>`).join('')}
 </select>
-<div class="row2">
-  <div>
-    <label>API KEY</label>
-    <input id="api-key" placeholder="fxa_..." />
-  </div>
-  <div>
-    <label>SECRET</label>
-    <input id="api-secret" placeholder="hex secret" type="password" />
-  </div>
-</div>
 </div>
 
 <div class="card">
@@ -887,25 +877,9 @@ function loadPreset(key) {
   document.getElementById('alert-message').value = p.message;
 }
 
-function onCustomerChange() {
-  const val = document.getElementById('customer-select').value;
-  if (!val) return;
-  const [key, secret] = val.split('|');
-  document.getElementById('api-key').value = key;
-  document.getElementById('api-secret').value = secret;
-}
-
-async function hmacSign(message, secret) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const raw = await crypto.subtle.sign('HMAC', key, enc.encode(message));
-  return Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
 async function sendAlert() {
-  const apiKey = document.getElementById('api-key').value.trim();
-  const secret = document.getElementById('api-secret').value.trim();
-  if (!apiKey || !secret) { alert('API key and secret required'); return; }
+  const apiKey = document.getElementById('customer-select').value;
+  if (!apiKey) { alert('Select a customer first'); return; }
 
   const payload = {
     title: document.getElementById('alert-title').value.trim(),
@@ -914,19 +888,17 @@ async function sendAlert() {
     severity: document.getElementById('alert-severity').value,
     message: document.getElementById('alert-message').value.trim(),
   };
-  const body = JSON.stringify(payload);
-  const timestamp = String(Date.now());
-  const signature = await hmacSign(timestamp + '.' + body, secret);
 
   const btn = document.getElementById('send-btn');
   btn.disabled = true; btn.textContent = 'SENDING...';
 
+  // Signing done server-side — secret never touches the browser
   let status, responseText;
   try {
-    const res = await fetch('/alert', {
+    const res = await fetch('/admin/sign-alert', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-FX-Key': apiKey, 'X-FX-Signature': signature, 'X-FX-Timestamp': timestamp },
-      body,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: apiKey, alert: payload }),
     });
     status = res.status;
     responseText = await res.text();
@@ -936,13 +908,19 @@ async function sendAlert() {
   badge.textContent = status;
   badge.className = 'badge ' + (status === 200 ? 'ok' : 'err');
   document.getElementById('response-body').textContent = (() => { try { return JSON.stringify(JSON.parse(responseText), null, 2); } catch { return responseText; } })();
+  // Show curl template — customer fills in their own signature
+  const alertBody = JSON.stringify(payload);
   document.getElementById('curl-output').textContent =
-\`curl -X POST https://fixitagent.ai/alert \\
+\`# Generate signature (replace YOUR_SECRET):
+TIMESTAMP=\$(date +%s000)
+SIG=\$(echo -n "\${TIMESTAMP}.\${BODY}" | openssl dgst -sha256 -hmac "YOUR_SECRET" | awk '{print \$2}')
+
+curl -X POST https://fixitagent.ai/alert \\
   -H "Content-Type: application/json" \\
   -H "X-FX-Key: \${apiKey}" \\
-  -H "X-FX-Signature: \${signature}" \\
-  -H "X-FX-Timestamp: \${timestamp}" \\
-  -d '\${body}'\`;
+  -H "X-FX-Signature: \$SIG" \\
+  -H "X-FX-Timestamp: \$TIMESTAMP" \\
+  -d '\${alertBody}'\`;
 
   document.getElementById('result-section').style.display = 'block';
   document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
@@ -952,6 +930,44 @@ async function sendAlert() {
 </body></html>`;
 
       return new Response(sandboxHTML, { headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS } });
+    }
+
+    // POST /admin/sign-alert — owner-only server-side alert signing (sandbox use)
+    // Secret never leaves the server — browser only sends the API key + payload
+    if (url.pathname === "/admin/sign-alert" && request.method === "POST") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return new Response("Forbidden", { status: 403, headers: SECURITY_HEADERS });
+
+      let body;
+      try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      const { api_key, alert } = body;
+      if (!api_key || !alert) return new Response("api_key and alert required", { status: 400 });
+
+      const customerRaw = env.MEMORY ? await env.MEMORY.get(`apikey:${api_key}`) : null;
+      if (!customerRaw) return new Response("Unknown API key", { status: 404 });
+      const customer = JSON.parse(customerRaw);
+
+      const alertBody = JSON.stringify(alert);
+      const timestamp = String(Date.now());
+      const signature = await hmacHex(`${timestamp}.${alertBody}`, customer.secret);
+
+      // Proxy to /alert with signed headers
+      const alertRes = await fetch(`https://${url.hostname}/alert`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-FX-Key": api_key,
+          "X-FX-Signature": signature,
+          "X-FX-Timestamp": timestamp,
+        },
+        body: alertBody,
+      });
+      const alertData = await alertRes.text();
+      return new Response(alertData, {
+        status: alertRes.status,
+        headers: { "Content-Type": "application/json", ...SECURITY_HEADERS },
+      });
     }
 
     // GET /admin/security-eval — owner-only security scorecard

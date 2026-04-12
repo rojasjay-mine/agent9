@@ -43,3 +43,15 @@
   - Removed agent9.rojasjay.workers.dev from allowed origins
 - SESSION_SECRET added to Cloudflare Worker secrets (generate with: openssl rand -hex 32)
 - Dev branch: claude/catch-up-wdOyZ (merged to main)
+
+## 2026-04-12 (continued)
+- Added /admin/security-eval — live security scorecard, 14 checks across secrets/bindings/endpoints/headers, % score UI
+- Added /admin/sandbox — interactive alert tester (owner-only, secrets never in browser, server-side signing via /admin/sign-alert)
+- Fixed login broken by threat score check blocking /login — removed /login from threat-score sensitive paths
+- Fixed empty sessionSecret crash — fallback is now "fx-agent9-session-default-v1" not ""
+- Sandbox secrets hardened — dropdown embeds key only, signing done server-side in /admin/sign-alert (no self-request, inlined)
+- OPEN ISSUE: sandbox still hangs on "SENDING..." — Claude API call inside /admin/sign-alert is timing out
+  - Fix needed: add AbortSignal.timeout(20000) to Claude fetch, add skip_claude option for routing-only test
+  - Also verify ANTHROPIC_API_KEY is set in Cloudflare env vars
+- Provisioned first test customer via /admin → Provision Customer form
+- Slack webhook needed on provisioned customer OR SLACK_WEBHOOK_URL set in CF env vars for alerts to deliver

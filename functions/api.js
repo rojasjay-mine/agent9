@@ -544,6 +544,7 @@ export default {
       let stripeStatus = "Not configured";
       let slackStatus = env.SLACK_WEBHOOK_URL ? "Configured" : "Not configured";
       let subscribers = [];
+      let apiKeys = [];
 
       try { await env.MEMORY.get("_health"); } catch { kvStatus = "ERROR"; }
 
@@ -562,6 +563,20 @@ export default {
           }));
           stripeStatus = "Connected";
         } catch { stripeStatus = "Error"; }
+      }
+
+      // List provisioned alert customers
+      if (env.MEMORY) {
+        try {
+          const list = await env.MEMORY.list({ prefix: "apikey:" });
+          for (const k of list.keys) {
+            const val = await env.MEMORY.get(k.name);
+            if (val) {
+              const d = JSON.parse(val);
+              apiKeys.push({ key: k.name.replace("apikey:", ""), email: d.email, name: d.name, created_at: d.created_at || "", slack: d.slack_webhook ? "✓" : "✗" });
+            }
+          }
+        } catch {}
       }
 
       const adminHTML = `<!DOCTYPE html>
@@ -613,9 +628,50 @@ export default {
       subscribers.map(s => `<div class="sub-item">${s.email} — ${s.status}${s.trial_end ? ' (trial until ' + s.trial_end + ')' : ''}</div>`).join('')}
   </div>
   <div class="card">
+    <h2>ALERT CUSTOMERS (${apiKeys.length})</h2>
+    ${apiKeys.length === 0 ? '<div style="color:#2a5070;font-size:13px">No customers provisioned yet.</div>' :
+      apiKeys.map(k => `<div class="sub-item" style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <span style="color:#d0eeff">${k.name}</span><span style="color:#2a5070">${k.email}</span>
+        <span style="color:#00c8ff;font-size:11px">${k.key}</span><span style="color:#2a5070;font-size:11px">Slack ${k.slack} · ${k.created_at ? k.created_at.slice(0,10) : 'unknown'}</span>
+      </div>`).join('')}
+  </div>
+  <div class="card">
+    <h2>PROVISION CUSTOMER</h2>
+    <form id="provision-form" style="display:flex;flex-direction:column;gap:12px">
+      <input id="prov-email" placeholder="customer@example.com" style="background:#04080f;border:1px solid #0d2040;color:#d0eeff;padding:8px 12px;font-family:inherit;font-size:13px;outline:none" />
+      <input id="prov-name" placeholder="Company / customer name" style="background:#04080f;border:1px solid #0d2040;color:#d0eeff;padding:8px 12px;font-family:inherit;font-size:13px;outline:none" />
+      <input id="prov-slack" placeholder="https://hooks.slack.com/... (optional)" style="background:#04080f;border:1px solid #0d2040;color:#d0eeff;padding:8px 12px;font-family:inherit;font-size:13px;outline:none" />
+      <button type="submit" style="background:#00c8ff;color:#04080f;border:none;padding:10px 20px;font-family:inherit;font-weight:700;font-size:13px;letter-spacing:1px;cursor:pointer">PROVISION KEY</button>
+    </form>
+    <pre id="prov-result" style="margin-top:16px;background:#04080f;border:1px solid #0d2040;padding:12px;font-size:12px;color:#00c8ff;white-space:pre-wrap;display:none"></pre>
+    <script>
+    document.getElementById('provision-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const result = document.getElementById('prov-result');
+      result.style.display = 'block';
+      result.textContent = 'Provisioning...';
+      try {
+        const res = await fetch('/admin/provision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_email: document.getElementById('prov-email').value.trim(),
+            name: document.getElementById('prov-name').value.trim(),
+            slack_webhook: document.getElementById('prov-slack').value.trim()
+          })
+        });
+        const data = await res.json();
+        result.textContent = JSON.stringify(data, null, 2);
+        if (res.ok) { document.getElementById('provision-form').reset(); }
+      } catch(err) { result.textContent = 'Error: ' + err.message; }
+    });
+    </script>
+  </div>
+  <div class="card">
     <h2>QUICK LINKS</h2>
     <div class="links">
       <a href="/agents">Agents</a>
+      <a href="/test-slack">Test Slack</a>
       <a href="/logout">Logout</a>
       <a href="/">Home</a>
     </div>
@@ -932,6 +988,33 @@ export default {
       return new Response(JSON.stringify({ ok: true, agent: agent.name }), {
         headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
       });
+    }
+
+    // POST /alert/test — customer verifies their API key + Slack integration
+    if (url.pathname === "/alert/test" && request.method === "POST") {
+      const apiKey = request.headers.get("X-FX-Key") || "";
+      if (!apiKey) return new Response("Missing X-FX-Key header", { status: 401, headers: SECURITY_HEADERS });
+      const customerRaw = env.MEMORY ? await env.MEMORY.get(`apikey:${apiKey}`) : null;
+      if (!customerRaw) return new Response("Invalid API key", { status: 401, headers: SECURITY_HEADERS });
+      const customer = JSON.parse(customerRaw);
+
+      const slackTarget = customer.slack_webhook || env.SLACK_WEBHOOK_URL;
+      let slackOk = false;
+      if (slackTarget) {
+        const res = await fetch(slackTarget, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: `✅ *FX Agents — Integration Test*\n*Customer:* ${customer.name}\n*API Key:* ${apiKey.slice(0,12)}...\nYour alert integration is working correctly.\n_fixitagent.ai_` })
+        }).catch(() => null);
+        slackOk = res?.ok || false;
+      }
+
+      return new Response(JSON.stringify({
+        ok: true,
+        customer: customer.name,
+        endpoint: "https://fixitagent.ai/alert",
+        slack: slackTarget ? (slackOk ? "delivered" : "failed") : "not configured",
+      }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
     }
 
     // POST /admin/provision — create customer API key + secret (owner only)

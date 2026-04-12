@@ -303,11 +303,16 @@ async function verifySessionCookie(cookieHeader, secret) {
   if (!match) return null;
   const token = decodeURIComponent(match[1]);
   try {
-    const [b64email] = token.split(".");
-    const email = atob(b64email);
-    const expected = await signSession(email, secret);
-    if (token !== expected) return null;
-    return email;
+    const dot = token.indexOf(".");
+    if (dot === -1) return null;
+    const email = atob(token.slice(0, dot));
+    const sigBytes = Uint8Array.from(atob(token.slice(dot + 1)), c => c.charCodeAt(0));
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" }, false, ["verify"]
+    );
+    const valid = await crypto.subtle.verify("HMAC", key, sigBytes, new TextEncoder().encode(email));
+    return valid ? email : null;
   } catch { return null; }
 }
 
@@ -400,28 +405,43 @@ async function hmacHex(message, secret) {
   return Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Timing-safe HMAC verification — prevents timing oracle attacks
+async function verifyHmac(message, secret, hexSig) {
+  try {
+    const sigBytes = new Uint8Array(hexSig.match(/.{2}/g).map(b => parseInt(b, 16)));
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" }, false, ["verify"]
+    );
+    return await crypto.subtle.verify("HMAC", key, sigBytes, new TextEncoder().encode(message));
+  } catch { return false; }
+}
+
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
-  "X-XSS-Protection": "1; mode=block",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+  "Content-Security-Policy": "default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'",
+  "X-Permitted-Cross-Domain-Policies": "none",
 };
 
-// Simple in-memory rate limiter (per IP, resets on worker restart)
-const rateLimitMap = new Map();
-function isRateLimited(ip, limit = 30, windowMs = 60000) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip) || { count: 0, start: now, alerted: false };
-  if (now - entry.start > windowMs) { entry.count = 0; entry.start = now; entry.alerted = false; }
-  entry.count++;
-  rateLimitMap.set(ip, entry);
-  // Return {limited, firstHit} so we only alert once per window
-  if (entry.count > limit) {
-    const firstHit = !entry.alerted;
-    entry.alerted = true;
-    return { limited: true, firstHit };
+// Distributed rate limiter — uses CF RateLimit binding (global across all edge nodes)
+// alertedIps tracks first-hit alerting per worker instance (alert dedup only, not enforcement)
+const alertedIps = new Set();
+async function checkRateLimit(env, ip, binding = "RL_GLOBAL") {
+  if (env[binding]) {
+    const { success } = await env[binding].limit({ key: ip });
+    if (!success) {
+      const firstHit = !alertedIps.has(ip + binding);
+      alertedIps.add(ip + binding);
+      setTimeout(() => alertedIps.delete(ip + binding), 60000);
+      return { limited: true, firstHit };
+    }
+    return { limited: false, firstHit: false };
   }
+  // Fallback: in-memory (local dev / binding not configured)
   return { limited: false, firstHit: false };
 }
 
@@ -474,27 +494,37 @@ export default {
     const url = new URL(request.url);
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-    // Rate limit: 30 requests/min per IP (skip for Stripe webhooks)
-    const { limited, firstHit } = url.pathname !== "/webhook" ? isRateLimited(ip) : { limited: false, firstHit: false };
-    if (limited) {
-      if (firstHit) await alertSecurityBreach(env, "RATE LIMIT EXCEEDED", `IP: ${ip}\nPath: ${url.pathname}\nMethod: ${request.method}`);
-      return new Response("Too many requests", { status: 429, headers: SECURITY_HEADERS });
-    }
-
-    // Block oversized request bodies (max 1MB)
+    // Block oversized request bodies (max 1MB) — checked before rate limit to avoid counting junk
     const contentLength = parseInt(request.headers.get("Content-Length") || "0");
     if (contentLength > 1_000_000) {
       await alertSecurityBreach(env, "OVERSIZED PAYLOAD", `IP: ${ip}\nPath: ${url.pathname}\nSize: ${contentLength} bytes`);
       return new Response("Payload too large", { status: 413, headers: SECURITY_HEADERS });
     }
 
-    // Origin check helper — only fixitagent.ai allowed for sensitive endpoints
+    // Cloudflare threat score — block known bad actors on sensitive paths
+    const threatScore = request.cf?.threatScore ?? 0;
+    const sensitivePath = ["/api", "/alert", "/login", "/checkout", "/admin"].some(p => url.pathname.startsWith(p));
+    if (threatScore > 50 && sensitivePath) {
+      return new Response("Forbidden", { status: 403, headers: SECURITY_HEADERS });
+    }
+
+    // Distributed rate limit: 60 req/min globally (skip Stripe webhooks)
+    if (url.pathname !== "/webhook") {
+      const { limited, firstHit } = await checkRateLimit(env, ip, "RL_GLOBAL");
+      if (limited) {
+        if (firstHit) await alertSecurityBreach(env, "RATE LIMIT EXCEEDED", `IP: ${ip}\nPath: ${url.pathname}\nThreat Score: ${threatScore}`);
+        return new Response("Too many requests", { status: 429, headers: SECURITY_HEADERS });
+      }
+    }
+
+    // Origin check — defense-in-depth for browser-based attacks (not sole auth mechanism)
     const origin = request.headers.get("Origin") || "";
     const referer = request.headers.get("Referer") || "";
-    const ALLOWED = ["https://fixitagent.ai", "https://agent9.rojasjay.workers.dev"];
+    const ALLOWED = ["https://fixitagent.ai", "https://www.fixitagent.ai"];
     const fromSite = ALLOWED.some(a => origin.startsWith(a) || referer.startsWith(a));
 
-    const sessionSecret = env.STRIPE_WEBHOOK_SECRET || "fx-fallback-secret";
+    // Session secret — dedicated env var, falls back to Stripe secret only if not set
+    const sessionSecret = env.SESSION_SECRET || env.STRIPE_WEBHOOK_SECRET || "";
     const cookieHeader = request.headers.get("Cookie") || "";
 
     // GET /login — serve login page
@@ -774,11 +804,21 @@ export default {
       if (request.method !== "POST") {
         return new Response("Method not allowed", { status: 405 });
       }
-      // Auth check — only allow requests from fixitagent.ai
-      if (!fromSite) {
-        await alertSecurityBreach(env, "UNAUTHORIZED /api ACCESS", `IP: ${ip}\nOrigin: ${origin || "none"}\nReferer: ${referer || "none"}`);
+      // Require valid session cookie — prevents cancelled/external users from hitting Claude API
+      const apiEmail = await verifySessionCookie(cookieHeader, sessionSecret);
+      if (!apiEmail) {
+        await alertSecurityBreach(env, "UNAUTHORIZED /api ACCESS", `IP: ${ip}\nOrigin: ${origin || "none"}\nNo valid session`);
         return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
       }
+      // Verify subscription still active
+      const apiSubRaw = env.MEMORY ? await env.MEMORY.get(`subscriber:${apiEmail}`) : null;
+      if (!apiSubRaw || JSON.parse(apiSubRaw).status !== "active") {
+        return new Response("Subscription required", { status: 403, headers: SECURITY_HEADERS });
+      }
+      // Tighter per-IP rate limit for Claude API calls (expensive)
+      const { limited: apiLimited } = await checkRateLimit(env, ip, "RL_API");
+      if (apiLimited) return new Response("Too many requests", { status: 429, headers: SECURITY_HEADERS });
+
       let body;
       try {
         body = await request.json();
@@ -932,17 +972,18 @@ export default {
       }
       const customer = JSON.parse(customerRaw);
 
-      // Verify HMAC signature (timestamp within 5 min + body)
-      if (signature) {
-        const ts = parseInt(timestamp);
-        if (isNaN(ts) || Math.abs(Date.now() - ts) > 300000) {
-          return new Response("Timestamp expired", { status: 401, headers: SECURITY_HEADERS });
-        }
-        const expected = await hmacHex(`${timestamp}.${rawBody}`, customer.secret);
-        if (expected !== signature) {
-          await alertSecurityBreach(env, "INVALID ALERT SIGNATURE", `Customer: ${customer.email}\nIP: ${ip}`);
-          return new Response("Invalid signature", { status: 401, headers: SECURITY_HEADERS });
-        }
+      // Require HMAC signature — unsigned requests rejected even with valid key
+      if (!signature || !timestamp) {
+        return new Response("Missing X-FX-Signature and X-FX-Timestamp headers", { status: 401, headers: SECURITY_HEADERS });
+      }
+      const ts = parseInt(timestamp);
+      if (isNaN(ts) || Math.abs(Date.now() - ts) > 300000) {
+        return new Response("Timestamp expired or invalid", { status: 401, headers: SECURITY_HEADERS });
+      }
+      const sigValid = await verifyHmac(`${timestamp}.${rawBody}`, customer.secret, signature);
+      if (!sigValid) {
+        await alertSecurityBreach(env, "INVALID ALERT SIGNATURE", `Customer: ${customer.email}\nIP: ${ip}`);
+        return new Response("Invalid signature", { status: 401, headers: SECURITY_HEADERS });
       }
 
       let alert;

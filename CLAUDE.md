@@ -67,6 +67,7 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 - `STRIPE_SECRET_KEY` — sk_live_...
 - `STRIPE_WEBHOOK_SECRET` — whsec_bAPLGxBo2XEQ8dJOVYBTFxopxVvtWaoR
 - `SLACK_WEBHOOK_URL` — Slack incoming webhook
+- `SESSION_SECRET` — random 32-byte hex string for signing session cookies (separate from Stripe secret)
 
 ## Conventions
 - No build step — keep frontend as inline template literal in api.js

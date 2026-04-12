@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agent9 — Infrastructure That Fixes Itself</title>
+<title>Agent9 — Automated Infrastructure Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -114,6 +114,19 @@
   .fn-desc { font-size: 12px; color: var(--text-dim); line-height: 1.7; }
   .flow-arrow { font-size: 20px; color: var(--teal); padding: 0 8px; flex-shrink: 0; }
 
+  /* SECURITY */
+  #security { padding: 100px 40px; border-bottom: 1px solid var(--border); }
+  .security-inner { max-width: 1200px; margin: 0 auto; }
+  .security-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); margin-top: 56px; }
+  .sc-card { background: var(--panel); padding: 40px 32px; border-top: 2px solid transparent; transition: border-color 0.2s; }
+  .sc-card:hover { border-top-color: var(--teal); }
+  .sc-num { font-family: 'Orbitron', monospace; font-size: 11px; color: var(--teal); letter-spacing: 3px; margin-bottom: 16px; }
+  .sc-title { font-family: 'Orbitron', monospace; font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 24px; line-height: 1.4; }
+  .sc-item { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: var(--text-dim); padding: 9px 0; border-bottom: 1px solid var(--border); line-height: 1.7; }
+  .sc-item:last-child { border: none; }
+  .sc-item .ck { color: var(--teal); flex-shrink: 0; margin-top: 2px; }
+  @media (max-width: 768px) { .security-grid { grid-template-columns: 1fr; } }
+
   /* PRICING */
   #pricing { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 100px 40px; }
   .pricing-inner { max-width: 1000px; margin: 0 auto; }
@@ -213,7 +226,7 @@
 
 <nav>
   <div class="logo">FIX<span>IT</span>AGENT</div>
-  <div class="nav-status"><div class="dot"></div>ALL AGENTS ONLINE</div>
+  <div class="nav-status"><div class="dot"></div>ALL AGENTS OPERATIONAL</div>
   <div style="display:flex;gap:16px;align-items:center;">
     <a href="/how-it-works.html" style="color:var(--text-dim);text-decoration:none;font-size:13px;">How It Works</a>
     <a href="#cta" class="btn">Request Access</a>
@@ -222,9 +235,9 @@
 
 <!-- HERO -->
 <section id="hero">
-  <div class="eyebrow">AGENT9 — TEN SPECIALISTS, ONE SYSTEM</div>
-  <h1>Ten minds.<br>One stack.<br><span class="accent">No explanations.</span></h1>
-  <p class="hero-sub">A constellation of purpose-built AI agents — each a specialist in its domain. Webhook failures. Deploy crises. Environment leaks. They don't file tickets. They return the exact fix.</p>
+  <div class="eyebrow">AGENT9 — INFRASTRUCTURE INTELLIGENCE PLATFORM</div>
+  <h1>Automated incident<br>analysis. Delivered<br><span class="accent">in under two seconds.</span></h1>
+  <p class="hero-sub">Ten domain-specific AI agents continuously monitor your infrastructure, classify alerts by severity, identify root causes, and deliver precise remediation guidance — without requiring human intervention.</p>
   <div class="hero-cta">
     <a href="#cta" class="btn btn-solid">Begin Free Trial</a>
     <a href="#pricing" class="btn">View Plans</a>
@@ -240,46 +253,81 @@
 
 <!-- STATS -->
 <div class="stat-bar">
-  <div class="stat-item"><div class="stat-num">&lt;<span class="u">2s</span></div><div class="stat-label">ALERT TO FIX</div></div>
-  <div class="stat-item"><div class="stat-num">24<span class="u">/7</span></div><div class="stat-label">ALWAYS WATCHING</div></div>
-  <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">DOMAIN SPECIALISTS</div></div>
-  <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">ENGINEERS PAGED</div></div>
+  <div class="stat-item"><div class="stat-num">&lt;<span class="u">2s</span></div><div class="stat-label">MEAN TIME TO ANALYSIS</div></div>
+  <div class="stat-item"><div class="stat-num">24<span class="u">/7</span></div><div class="stat-label">CONTINUOUS MONITORING</div></div>
+  <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">SPECIALIZED AGENTS</div></div>
+  <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">ON-CALL INTERRUPTIONS</div></div>
 </div>
 
 <!-- HOW IT WORKS -->
 <section id="now">
-  <div class="section-label">// HOW IT MOVES</div>
-  <h2>Alert in. Fix out.</h2>
-  <p style="color:var(--text-dim);max-width:520px;font-size:13px;line-height:1.9;">The gap between "something broke" and "here's the exact fix" used to require a team, a runbook, and twenty minutes. Agent9 closes it in under two seconds.</p>
+  <div class="section-label">// SYSTEM ARCHITECTURE</div>
+  <h2>From alert to resolution.</h2>
+  <p style="color:var(--text-dim);max-width:520px;font-size:13px;line-height:1.9;">Agent9 intercepts infrastructure alerts the moment they fire, routes them to the appropriate specialist agent, and returns a complete remediation package — classified, diagnosed, and prescribed — before a human would finish reading the notification.</p>
   <div class="flow-row">
     <div class="flow-node">
-      <div class="fn-icon">01 // INTERCEPT</div>
-      <div class="fn-title">ALERT ARRIVES</div>
-      <div class="fn-desc">Webhook, Datadog, PagerDuty — doesn't matter. Agent9 catches the signal the moment it fires, before it reaches a human.</div>
+      <div class="fn-icon">01 // INGESTION</div>
+      <div class="fn-title">ALERT RECEIVED</div>
+      <div class="fn-desc">Agent9 accepts incoming alert payloads from any webhook source — Datadog, PagerDuty, Cloudflare, or custom integrations. Each request is validated, size-checked, and queued for analysis upon receipt.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-node">
-      <div class="fn-icon">02 // DISSECT</div>
-      <div class="fn-title">SPECIALIST ENGAGES</div>
-      <div class="fn-desc">The right agent takes the case. Root cause, severity, blast radius — assessed with surgical precision by the AI built for exactly this failure mode.</div>
+      <div class="fn-icon">02 // ANALYSIS</div>
+      <div class="fn-title">SPECIALIST ASSIGNED</div>
+      <div class="fn-desc">The appropriate domain agent evaluates the alert. Severity is classified. Root cause is isolated. Blast radius is assessed. Each agent carries deep expertise in its specific failure domain.</div>
     </div>
     <div class="flow-arrow">→</div>
     <div class="flow-node">
-      <div class="fn-icon">03 // DELIVER</div>
-      <div class="fn-title">FIX IN HAND</div>
-      <div class="fn-desc">A complete remediation: classified, diagnosed, prescribed. Posted to Slack. Logged for audit. Your team wakes up to a closed incident.</div>
+      <div class="fn-icon">03 // DELIVERY</div>
+      <div class="fn-title">REMEDIATION DELIVERED</div>
+      <div class="fn-desc">A structured remediation report — severity classification, root cause analysis, and prescribed fix — is posted to your Slack channel and logged for audit. Your team receives context, not noise.</div>
     </div>
   </div>
 </section>
 
 <hr class="divider">
 
+<!-- SECURITY -->
+<section id="security">
+  <div class="security-inner">
+    <div class="section-label">// SECURITY ARCHITECTURE</div>
+    <h2>Designed for security<br>at every layer.</h2>
+    <p style="color:var(--text-dim);max-width:560px;font-size:13px;line-height:1.9;">Agent9 was built with security as a primary design requirement. Authentication, data isolation, and request integrity are enforced at the infrastructure level — not bolted on after the fact.</p>
+    <div class="security-grid">
+      <div class="sc-card">
+        <div class="sc-num">01 // IDENTITY</div>
+        <div class="sc-title">Authentication &amp;<br>Access Control</div>
+        <div class="sc-item"><span class="ck">✓</span> HMAC-SHA256 signed session tokens — cryptographically verified on every protected request</div>
+        <div class="sc-item"><span class="ck">✓</span> Subscriber status validated against server-side KV store on each route — no client-trust assumptions</div>
+        <div class="sc-item"><span class="ck">✓</span> Cookies set with HttpOnly, Secure, and SameSite=Strict attributes — resistant to XSS and CSRF</div>
+        <div class="sc-item"><span class="ck">✓</span> 30-day session expiry with immediate server-side revocation on subscription cancellation</div>
+      </div>
+      <div class="sc-card">
+        <div class="sc-num">02 // ISOLATION</div>
+        <div class="sc-title">Data Privacy &amp;<br>Per-User Isolation</div>
+        <div class="sc-item"><span class="ck">✓</span> Conversation history stored under per-user KV namespace keys — no shared data between accounts</div>
+        <div class="sc-item"><span class="ck">✓</span> Memory access scoped exclusively to the authenticated email identity — cross-user access is architecturally impossible</div>
+        <div class="sc-item"><span class="ck">✓</span> Server-side KV is the authoritative data store — local browser cache is a secondary convenience layer only</div>
+        <div class="sc-item"><span class="ck">✓</span> No user data is transmitted to third-party analytics or advertising systems</div>
+      </div>
+      <div class="sc-card">
+        <div class="sc-num">03 // INTEGRITY</div>
+        <div class="sc-title">Request Integrity &amp;<br>Abuse Prevention</div>
+        <div class="sc-item"><span class="ck">✓</span> Rate limiting enforced at 30 requests per minute per IP address — threshold violations trigger immediate Slack alerts</div>
+        <div class="sc-item"><span class="ck">✓</span> Origin and Referer validation on all sensitive endpoints — requests from outside the permitted domain are rejected with a 401</div>
+        <div class="sc-item"><span class="ck">✓</span> Stripe webhook signature verification via HMAC-SHA256 — forgery attempts are detected, blocked, and alerted in real time</div>
+        <div class="sc-item"><span class="ck">✓</span> 1 MB request body cap — oversized payloads are rejected with a 413 and logged for review</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- PRICING -->
 <section id="pricing">
   <div class="pricing-inner">
-    <div class="section-label">// INTELLIGENCE TIERS</div>
-    <h2>One flat rate. No seats. No surprises.</h2>
-    <p style="color:var(--text-dim);font-size:13px;max-width:480px;line-height:1.9;">Pay per environment, not per engineer. 14-day free trial — no card to start.</p>
+    <div class="section-label">// SERVICE TIERS</div>
+    <h2>Transparent pricing.<br>No per-seat fees.</h2>
+    <p style="color:var(--text-dim);font-size:13px;max-width:480px;line-height:1.9;">Billed per environment, not per user. 14-day free trial — no payment required to start.</p>
     <div class="billing-toggle">
       <div class="toggle-pill">
         <button class="toggle-opt active" id="btn-monthly" onclick="setBilling('monthly')">MONTHLY</button>
@@ -343,15 +391,15 @@
 <!-- ROADMAP -->
 <section id="vision">
   <div class="vision-inner">
-    <div class="section-label">// EVOLUTION</div>
-    <h2>Where this goes.</h2>
+    <div class="section-label">// PRODUCT ROADMAP</div>
+    <h2>Platform development trajectory.</h2>
     <div class="timeline">
       <div class="tl-item">
         <div class="tl-version active">v0.1</div>
         <div class="tl-line-col"><div class="tl-dot active"></div><div class="tl-vline"></div></div>
         <div class="tl-content">
           <div class="tl-title">Reactive Intelligence</div>
-          <div class="tl-desc">Agent9 intercepts your alerts and returns clarity. Severity classified. Root cause identified. Exact fix prescribed. In under two seconds, at any hour.</div>
+          <div class="tl-desc">Agent9 receives infrastructure alerts, classifies severity, identifies root cause, and returns a precise remediation recommendation — all within two seconds of alert receipt, around the clock.</div>
           <div class="tl-tags"><span class="tag live">LIVE NOW</span><span class="tag">Cloudflare Worker</span><span class="tag">Claude AI</span><span class="tag">Slack</span></div>
         </div>
       </div>
@@ -360,7 +408,7 @@
         <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-vline"></div></div>
         <div class="tl-content">
           <div class="tl-title">Distributed Cognition</div>
-          <div class="tl-desc">A constellation of specialized agents operating in parallel. Each an expert in its domain. Faster resolution. Deeper analysis. No single point of failure.</div>
+          <div class="tl-desc">Multiple specialized agents operating concurrently across alert streams. Each agent maintains deep domain expertise, enabling faster resolution with greater analytical depth and no single point of failure.</div>
           <div class="tl-tags"><span class="tag">Triage Agent</span><span class="tag">Diagnosis Agent</span><span class="tag">Audit Agent</span><span class="tag">Comms Agent</span></div>
         </div>
       </div>
@@ -369,7 +417,7 @@
         <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-vline" style="min-height:0;height:0"></div></div>
         <div class="tl-content">
           <div class="tl-title">Autonomous Remediation</div>
-          <div class="tl-desc">The anomaly is detected. The fix is written. The system heals itself. Rollback if it fails. Full audit trail. Your infrastructure becomes self-correcting — no human in the loop.</div>
+          <div class="tl-desc">Automated detection, remediation, and verification. Infrastructure anomalies are resolved without human intervention — with automatic rollback on failure, a complete audit log at time of incident, and support for multi-cloud environments.</div>
           <div class="tl-tags"><span class="tag">Auto-Remediation</span><span class="tag">Rollback Safety</span><span class="tag">Multi-Cloud</span><span class="tag">Audit Trail</span></div>
         </div>
       </div>
@@ -379,25 +427,25 @@
 
 <!-- ANGLE -->
 <section id="angle">
-  <div class="section-label">// THE DISTINCTION</div>
-  <div class="big-quote">Every other tool<br><span class="cross">alerts you.</span><br>Agent9 <span class="teal">resolves it.</span></div>
-  <p class="quote-sub">PagerDuty wakes you. Datadog charts the damage. OpsGenie routes the ticket. Nobody closes it. Agent9 was built for exactly that silence after the alarm.</p>
+  <div class="section-label">// COMPARATIVE ANALYSIS</div>
+  <div class="big-quote">Existing tools<br><span class="cross">surface the problem.</span><br>Agent9 <span class="teal">resolves it.</span></div>
+  <p class="quote-sub">PagerDuty routes the notification. Datadog records the anomaly. OpsGenie assigns the ticket. The interval between alert receipt and incident closure still requires a human engineer. Agent9 eliminates that dependency.</p>
   <div class="compare-grid">
     <div class="compare-cell">
       <div class="compare-label bad">// WITHOUT AGENT9</div>
-      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Alert fires at 2:47am</div>
-      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Engineer is paged</div>
-      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> 20 minutes to diagnose</div>
-      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Fix applied manually</div>
-      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Post-mortem written days later</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Alert received at 02:47 UTC</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> On-call engineer receives page notification</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> 15–20 minutes to identify root cause</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Remediation applied manually</div>
+      <div class="compare-item"><span class="mark" style="color:var(--red)">✕</span> Post-incident review scheduled 48–72 hours later</div>
     </div>
     <div class="compare-cell">
       <div class="compare-label good">// WITH AGENT9</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Alert fires at 2:47am</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Agent9 intercepts instantly</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Root cause in under 2 seconds</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Exact fix delivered to Slack</div>
-      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Audit trail generated automatically</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Alert received at 02:47 UTC</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Agent9 intercepts and routes immediately</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Root cause analysis completed in under 2 seconds</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Remediation report delivered to Slack</div>
+      <div class="compare-item good-item"><span class="mark" style="color:var(--teal)">✓</span> Audit log generated at time of incident</div>
     </div>
   </div>
 </section>
@@ -405,9 +453,9 @@
 <!-- FORM -->
 <section id="cta">
   <div class="cta-inner">
-    <div class="section-label" style="text-align:center">// BEGIN</div>
-    <h2 style="text-align:center">Fourteen days.<br><span style="color:var(--teal)">Every agent. Full capability.</span></h2>
-    <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-top:12px;">No card to start. Flat rate after trial — no seats, no per-alert fees. Cancel anytime.</p>
+    <div class="section-label" style="text-align:center">// GET STARTED</div>
+    <h2 style="text-align:center">Fourteen days.<br><span style="color:var(--teal)">Full platform access. No commitment.</span></h2>
+    <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-top:12px;">No payment required to start. Flat rate after trial — billed per environment, no per-alert fees. Cancel at any time.</p>
     <div class="form-card">
       <div id="form-wrap">
         <div class="form-row">
@@ -436,19 +484,19 @@
             </select>
           </div>
         </div>
-        <button class="submit-btn" id="submit-btn" onclick="submitForm()">REQUEST EARLY ACCESS →</button>
+        <button class="submit-btn" id="submit-btn" onclick="submitForm()">REQUEST ACCESS →</button>
         <p class="form-note">
-          Reply within 24 hours. Weekly updates every Thursday.<br>
-          No spam. Unsubscribe anytime.
+          We respond within one business day. Platform updates are communicated weekly.<br>
+          Your contact information will not be shared with third parties.
         </p>
       </div>
       <div class="success-msg" id="success-msg">
         <div class="success-icon">// CONFIRMED</div>
         <p class="success-text">
-          Access request received.<br><br>
-          You'll hear from us within 24 hours.<br>
-          Updates ship every Thursday — what launched, what's next, what we learned.<br><br>
-          <span style="color:var(--teal)">Agent9 is already operational.</span>
+          Your request has been received.<br><br>
+          We will follow up within one business day.<br>
+          You will receive weekly platform updates covering release notes, upcoming features, and technical context.<br><br>
+          <span style="color:var(--teal)">Agent9 is live and accepting connections.</span>
         </p>
       </div>
     </div>

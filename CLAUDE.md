@@ -70,7 +70,7 @@ webhook-doctor, cloudflare-copilot, code-surgeon, slack-wrangler, deploy-command
 
 ## Conventions
 - No build step — keep frontend as inline template literal in api.js
-- Model: `claude-sonnet-4-20250514`
+- Model: `claude-sonnet-4-6`
 - KV key for memory: `fx-agents-memory`
 - Memory: server (KV) is source of truth, localStorage is cache only
 
@@ -86,11 +86,5 @@ First paying customer. Solo $29/mo, Starter $79/mo, Pro $299/mo. Site live, Stri
 - Account ID: `6b2fdf0e036db269314e45966c0ff757`
 - To deploy: merge to main or push any commit to main
 - To deploy from Claude session: `npx wrangler deploy` (requires CLOUDFLARE_API_TOKEN in env)
-
-## Last session
-- Landing page copy rewrite — "Ten minds. One stack. No explanations." hero
-- Agents UI brightened — deep navy instead of near-black, readable borders/text
-- Merged all feature branches to main (30+ commits now live on GitHub)
-- Fixed deploy pipeline: added package.json, GitHub Actions workflow, fixed wrangler $schema
-- CLOUDFLARE_API_TOKEN added to GitHub secrets — auto-deploy on push to main now works
+- `.assetsignore` excludes node_modules/functions/config from static asset upload (critical — without it deploys fail)
 

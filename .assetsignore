@@ -1,0 +1,13 @@
+node_modules
+.wrangler
+.git
+.github
+functions
+*.jsonc
+package.json
+package-lock.json
+CLAUDE.md
+.mcp.json
+.gitignore
+.assetsignore
+agents.html

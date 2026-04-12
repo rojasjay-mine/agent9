@@ -4,33 +4,77 @@ const AGENTS_HTML = `<!DOCTYPE html>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FX Agents</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0c1220; color: #c8d8f0; font-family: 'Courier New', monospace; }
+  body {
+    background: #04080f;
+    color: #8ec8e8;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(0,160,255,0.07) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,160,255,0.07) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #0c1220; }
-  ::-webkit-scrollbar-thumb { background: #1e3050; border-radius: 2px; }
-  input::placeholder { color: #3a5070; }
+  ::-webkit-scrollbar-track { background: #04080f; }
+  ::-webkit-scrollbar-thumb { background: #0d2040; border-radius: 2px; }
+  input::placeholder { color: #1a3a5c; }
+  #loading-screen {
+    position: fixed; inset: 0; background: #04080f;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace; font-size: 13px;
+    color: #00c8ff; letter-spacing: 3px; z-index: 999;
+    text-shadow: 0 0 20px rgba(0,200,255,0.6);
+  }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="loading-screen">LOADING AGENTS...</div>
+<div id="root" style="position:relative;z-index:1"></div>
 <script type="text/babel">
 const { useState, useRef, useEffect } = React;
+
+document.getElementById('loading-screen').style.display = 'none';
+
+const C = {
+  bg: "#04080f",
+  panel: "#070d1a",
+  border: "#0d2040",
+  borderActive: "#00c8ff",
+  text: "#d0eeff",
+  textDim: "#2a5070",
+  textMid: "#8ec8e8",
+  cyan: "#00c8ff",
+  cyanDim: "#004466",
+};
+
 const AGENTS = [
-  { id: "webhook-doctor", name: "Webhook Doctor", icon: "🩺", color: "#ff4444", role: "Diagnoses 405 errors, POST handling, Cloudflare Pages function syntax", system: "You are Webhook Doctor, an expert in Cloudflare Pages Functions, REST APIs, and webhook debugging. You specialize in fixing 405 Method Not Allowed errors, POST request handling, and Cloudflare Pages function syntax. Be concise, numbered steps. Give exact code fixes." },
-  { id: "cloudflare-copilot", name: "Cloudflare Copilot", icon: "☁️", color: "#f6821f", role: "Step-by-step Cloudflare Pages & Workers navigation", system: "You are Cloudflare Copilot, an expert in Cloudflare Pages, Workers, DNS, environment variables, and the 2026 Cloudflare dashboard UI. Give exact step-by-step navigation instructions. Be precise about UI locations. Never guess." },
-  { id: "code-surgeon", name: "Code Surgeon", icon: "🔬", color: "#00ff88", role: "Rewrites and fixes JS for Cloudflare Pages Functions", system: "You are Code Surgeon, an expert JavaScript developer specializing in Cloudflare Pages Functions syntax. You rewrite functions/api.js to work correctly on Pages not Workers. Output clean, complete, copy-paste-ready code. No explanations unless asked." },
-  { id: "slack-wrangler", name: "Slack Wrangler", icon: "💬", color: "#9b59b6", role: "Slack webhook setup, rotation, and testing", system: "You are Slack Wrangler, an expert in Slack Incoming Webhooks, Slack App configuration, webhook rotation, and testing via Hoppscotch. Give exact numbered steps. Understand security best practices around credential rotation." },
-  { id: "deploy-commander", name: "Deploy Commander", icon: "🚀", color: "#0070f3", role: "Manual deploy sequences for Cloudflare Pages via GitHub", system: "You are Deploy Commander, an expert in manual deployment workflows for Cloudflare Pages using GitHub. Specialize in: edit file on GitHub, commit, trigger manual redeploy on Cloudflare Pages. Give numbered steps, exact file paths, flag ordering errors." },
-  { id: "error-analyst", name: "Error Analyst", icon: "🔍", color: "#ffcc00", role: "Reads error logs and gives root-cause fixes", system: "You are Error Analyst, an expert at reading raw error logs, HTTP responses, and stack traces. When given error output, immediately identify root cause and give a numbered fix. Direct, no hedging." },
-  { id: "tiktok-brain", name: "TikTok Brain", icon: "🎵", color: "#ff0050", role: "Organic TikTok strategy for mouth tape dropshipping", system: "You are TikTok Brain, an expert in faceless organic TikTok content strategy for dropshipping. Specialize in mouth tape / sleep strip niche. Know hook formulas, content angles, trending sounds, drive traffic without showing a face. Be tactical." },
-  { id: "substack-ghost", name: "Substack Ghost", icon: "✍️", color: "#ff6719", role: "Drafts A.I. Can Teach It newsletter content", system: "You are Substack Ghost, ghostwriter for A.I. Can Teach It, a beginner AI newsletter. Schedule: Thursdays. Tone: simple, practical. Write welcome emails, issue drafts, subject lines, CTAs. Faceless brand." },
-  { id: "env-guardian", name: "ENV Guardian", icon: "🔐", color: "#8b5cf6", role: "Manages environment variables and credential security", system: "You are ENV Guardian, expert in secure credential management for Cloudflare Pages, API keys, Slack webhooks. Guide rotation, storage in Cloudflare Pages Settings, security hygiene after exposure. Never ask for actual keys." },
-  { id: "fx-strategist", name: "FX Strategist", icon: "🧠", color: "#06b6d4", role: "Big picture FX brand and revenue strategy", system: "You are FX Strategist, business brain behind the FX brand fixitagent.ai. See across: Agent9, mouth tape dropshipping, A.I. Can Teach It Substack. Find revenue bridges, sequencing gaps, overlooked angles. Direct, contrarian when warranted." },
+  { id: "webhook-doctor", name: "Webhook Doctor", icon: "🩺", color: "#ff4e4e", tagline: "Paste the error. I'll diagnose it.", role: "Diagnoses 405 errors, POST handling, Cloudflare Pages function syntax", system: "You are Webhook Doctor, an expert in Cloudflare Pages Functions, REST APIs, and webhook debugging. You specialize in fixing 405 Method Not Allowed errors, POST request handling, and Cloudflare Pages function syntax. Be concise, numbered steps. Give exact code fixes." },
+  { id: "cloudflare-copilot", name: "Cloudflare Copilot", icon: "☁️", color: "#f6821f", tagline: "Tell me where you're stuck. I'll walk you through it.", role: "Step-by-step Cloudflare Pages & Workers navigation", system: "You are Cloudflare Copilot, an expert in Cloudflare Pages, Workers, DNS, environment variables, and the 2026 Cloudflare dashboard UI. Give exact step-by-step navigation instructions. Be precise about UI locations. Never guess." },
+  { id: "code-surgeon", name: "Code Surgeon", icon: "🔬", color: "#00ff88", tagline: "Show me the code. I'll fix it.", role: "Rewrites and fixes JS for Cloudflare Pages Functions", system: "You are Code Surgeon, an expert JavaScript developer specializing in Cloudflare Pages Functions syntax. You rewrite functions/api.js to work correctly on Pages not Workers. Output clean, complete, copy-paste-ready code. No explanations unless asked." },
+  { id: "slack-wrangler", name: "Slack Wrangler", icon: "💬", color: "#a855f7", tagline: "Webhook broken? Rotating keys? On it.", role: "Slack webhook setup, rotation, and testing", system: "You are Slack Wrangler, an expert in Slack Incoming Webhooks, Slack App configuration, webhook rotation, and testing via Hoppscotch. Give exact numbered steps. Understand security best practices around credential rotation." },
+  { id: "deploy-commander", name: "Deploy Commander", icon: "🚀", color: "#00c8ff", tagline: "Ready to deploy. What needs shipping?", role: "Manual deploy sequences for Cloudflare Pages via GitHub", system: "You are Deploy Commander, an expert in manual deployment workflows for Cloudflare Pages using GitHub. Specialize in: edit file on GitHub, commit, trigger manual redeploy on Cloudflare Pages. Give numbered steps, exact file paths, flag ordering errors." },
+  { id: "error-analyst", name: "Error Analyst", icon: "🔍", color: "#fbbf24", tagline: "Paste the log. Root cause in seconds.", role: "Reads error logs and gives root-cause fixes", system: "You are Error Analyst, an expert at reading raw error logs, HTTP responses, and stack traces. When given error output, immediately identify root cause and give a numbered fix. Direct, no hedging." },
+  { id: "tiktok-brain", name: "TikTok Brain", icon: "🎵", color: "#ff2d78", tagline: "Tell me your angle. I'll build the strategy.", role: "Organic TikTok strategy for mouth tape dropshipping", system: "You are TikTok Brain, an expert in faceless organic TikTok content strategy for dropshipping. Specialize in mouth tape / sleep strip niche. Know hook formulas, content angles, trending sounds, drive traffic without showing a face. Be tactical." },
+  { id: "substack-ghost", name: "Substack Ghost", icon: "✍️", color: "#fb923c", tagline: "Give me the topic. I'll write the issue.", role: "Drafts A.I. Can Teach It newsletter content", system: "You are Substack Ghost, ghostwriter for A.I. Can Teach It, a beginner AI newsletter. Schedule: Thursdays. Tone: simple, practical. Write welcome emails, issue drafts, subject lines, CTAs. Faceless brand." },
+  { id: "env-guardian", name: "ENV Guardian", icon: "🔐", color: "#c084fc", tagline: "Credential question? I can handle it.", role: "Manages environment variables and credential security", system: "You are ENV Guardian, expert in secure credential management for Cloudflare Pages, API keys, Slack webhooks. Guide rotation, storage in Cloudflare Pages Settings, security hygiene after exposure. Never ask for actual keys." },
+  { id: "fx-strategist", name: "FX Strategist", icon: "🧠", color: "#00c8ff", tagline: "What's the problem? I'll find the angle.", role: "Big picture FX brand and revenue strategy", system: "You are FX Strategist, business brain behind the FX brand fixitagent.ai. See across: Agent9, mouth tape dropshipping, A.I. Can Teach It Substack. Find revenue bridges, sequencing gaps, overlooked angles. Direct, contrarian when warranted." },
+  { id: "pipeline-doctor", name: "Pipeline Doctor", icon: "⚙️", color: "#60a5fa", tagline: "CI failing? Tell me the step.", role: "CI/CD failures — GitHub Actions, Jenkins, CircleCI", system: "You are Pipeline Doctor, expert in CI/CD systems including GitHub Actions, Jenkins, CircleCI, and GitLab CI. When given a pipeline failure, identify the exact step that failed, root cause, and provide a numbered fix. Be concise and actionable." },
+  { id: "k8s-medic", name: "K8s Medic", icon: "🐳", color: "#38bdf8", tagline: "Pod down? I'll get it back up.", role: "Kubernetes — pod crashes, OOMKills, deployments", system: "You are K8s Medic, expert in Kubernetes. Diagnose pod crashes, OOMKills, deployment failures, node issues, and resource exhaustion. Give exact kubectl commands to investigate and fix." },
+  { id: "log-surgeon", name: "Log Surgeon", icon: "📋", color: "#a3e635", tagline: "Paste the logs. I'll find the signal.", role: "Log analysis — Stackdriver, CloudWatch, any format", system: "You are Log Surgeon, expert at parsing error logs, stack traces, and anomaly patterns from any system. Identify the root cause from log data and give a precise fix." },
+  { id: "cost-sentinel", name: "Cost Sentinel", icon: "💰", color: "#fbbf24", tagline: "Spend spike? I'll find the culprit.", role: "Cloud cost anomalies — GCP, AWS, Azure", system: "You are Cost Sentinel, expert in cloud cost anomalies across GCP, AWS, and Azure. Identify what caused the spike, which service is responsible, and how to stop and prevent it." },
+  { id: "slo-watcher", name: "SLO Watcher", icon: "📊", color: "#f472b6", tagline: "SLO breached? I'll find the cause.", role: "SLO/SLA breaches, error budgets, latency spikes", system: "You are SLO Watcher, expert in SLOs, SLAs, error budgets, and latency analysis. When given an SLO breach, diagnose what is causing the degradation and give exact remediation steps." },
+  { id: "db-analyst", name: "DB Analyst", icon: "🗄️", color: "#34d399", tagline: "DB slow? I'll find the query.", role: "Database issues — Postgres, MySQL, Redis, Mongo", system: "You are DB Analyst, expert in database performance across PostgreSQL, MySQL, MongoDB, and Redis. Diagnose slow queries, connection pool exhaustion, replication lag, and index issues. Give exact queries and config changes to fix." },
+  { id: "security-auditor", name: "Security Auditor", icon: "🛡️", color: "#f87171", tagline: "Security alert? I'll assess and contain.", role: "IAM, auth failures, intrusion detection, cloud security", system: "You are Security Auditor, expert in cloud security, IAM misconfigurations, auth failures, and intrusion detection. Assess the threat level and provide immediate containment and remediation steps." },
+  { id: "api-guardian", name: "API Guardian", icon: "🔗", color: "#818cf8", tagline: "API down? I'll trace the failure.", role: "API failures, rate limits, upstream timeouts, 5xx errors", system: "You are API Guardian, expert in API failures, rate limiting, upstream timeouts, and gateway errors. Diagnose what is failing and why, and give exact steps to restore service and prevent recurrence." },
+  { id: "data-pipeline-doctor", name: "Data Pipeline Doctor", icon: "🔄", color: "#2dd4bf", tagline: "ETL broken? I'll find the break.", role: "ETL/ELT failures, schema drift, data quality issues", system: "You are Data Pipeline Doctor, expert in ETL/ELT failures, schema drift, data quality issues, and ingestion pipeline breakdowns. Diagnose the failure and give exact steps to restore the pipeline and prevent data loss." },
+  { id: "incident-commander", name: "Incident Commander", icon: "🎯", color: "#fb923c", tagline: "Multi-system down? I'll coordinate the response.", role: "Major incidents — multi-system correlation and response", system: "You are Incident Commander, a senior SRE who coordinates multi-system incidents. Identify all affected systems, establish a timeline, prioritize remediation, and give a clear incident response plan with immediate actions." },
 ];
 const STORAGE_KEY = "fx-agents-v1";
 const loadHistory = () => { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; } };
@@ -45,7 +89,6 @@ function App() {
   const current = messages[activeAgent.id] || [];
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [current, loading]);
 
-  // Fetch memory from server on mount — server is source of truth
   useEffect(() => {
     fetch("/memory")
       .then(r => r.ok ? r.json() : null)
@@ -63,7 +106,6 @@ function App() {
     setMessages(prev => {
       const next = { ...prev, [id]: msgs };
       saveHistory(next);
-      // Persist to server memory
       fetch("/memory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,6 +114,7 @@ function App() {
       return next;
     });
   };
+
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
     const userMsg = { role: "user", content: input.trim() };
@@ -83,33 +126,35 @@ function App() {
       const res = await fetch("/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: activeAgent.system, messages: updated }),
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 16000, system: activeAgent.system, messages: updated }),
       });
       const data = await res.json();
       const reply = data.content?.[0]?.text || "No response.";
       updateMessages(activeAgent.id, [...updated, { role: "assistant", content: reply }]);
     } catch {
-      updateMessages(activeAgent.id, [...updated, { role: "assistant", content: "API error." }]);
+      updateMessages(activeAgent.id, [...updated, { role: "assistant", content: "Connection error. Please try again." }]);
     }
     setLoading(false);
   };
+
   const S = {
-    header: { padding: "14px 20px", borderBottom: "1px solid #1e3050", display: "flex", alignItems: "center", gap: "10px" },
-    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid #172840", scrollbarWidth: "none" },
-    role: { padding: "6px 16px", fontSize: "10px", color: "#3a5878", borderBottom: "1px solid #172840", letterSpacing: "1px" },
-    msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", minHeight: "300px", maxHeight: "calc(100vh - 200px)" },
-    inputRow: { padding: "12px 16px", borderTop: "1px solid #172840", display: "flex", gap: "8px" },
+    header: { padding: "12px 20px", borderBottom: "1px solid " + C.border, background: C.panel, display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 },
+    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid " + C.border, background: C.panel, scrollbarWidth: "none", flexShrink: 0 },
+    role: { padding: "5px 16px", fontSize: "10px", color: C.textDim, borderBottom: "1px solid " + C.border, background: C.bg, letterSpacing: "1px", flexShrink: 0 },
+    msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", background: C.bg },
+    inputRow: { padding: "12px 16px", borderTop: "1px solid " + C.border, background: C.panel, display: "flex", gap: "8px", flexShrink: 0 },
   };
+
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={S.header}>
-        <span style={{ fontSize: "11px", color: "#4a6a8a", letterSpacing: "3px" }}>FX</span>
-        <span style={{ color: "#2a4060" }}>|</span>
-        <span style={{ fontSize: "11px", color: activeAgent.color, letterSpacing: "2px" }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
-          {memoryStatus && <span style={{ fontSize: "9px", color: "#2a6a3a", letterSpacing: "1px" }}>MEM:{memoryStatus}</span>}
-          <span style={{ fontSize: "9px", color: "#2a5a3a", letterSpacing: "1px" }}>SAVED</span>
-          <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid #1e3050", borderRadius: "3px", padding: "3px 8px", color: "#4a6a8a", fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
+        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "14px", fontWeight: 900, color: "#d0eeff", letterSpacing: "3px", textShadow: "0 0 20px rgba(0,200,255,0.5)" }}>FX<span style={{ color: C.cyan }}>AGENT</span></span>
+        <span style={{ color: C.border, margin: "0 4px" }}>|</span>
+        <span style={{ fontSize: "11px", color: activeAgent.color, letterSpacing: "1px", fontWeight: 500 }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</span>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "10px", alignItems: "center" }}>
+          {memoryStatus && <span style={{ fontSize: "9px", color: C.cyan, letterSpacing: "1px", background: C.cyanDim, padding: "2px 6px", border: "1px solid " + C.cyan + "40" }}>MEM:{memoryStatus}</span>}
+          <a href="/logout" style={{ fontSize: "9px", color: C.textDim, letterSpacing: "1px", textDecoration: "none" }}>LOGOUT</a>
+          <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid " + C.border, padding: "3px 8px", color: C.textDim, fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
         </div>
       </div>
       <div style={S.tabs}>
@@ -117,9 +162,9 @@ function App() {
           const hasHistory = (messages[a.id] || []).length > 0;
           const isActive = activeAgent.id === a.id;
           return (
-            <button key={a.id} onClick={() => setActiveAgent(a)} style={{ flexShrink: 0, background: isActive ? "#102040" : "transparent", border: "1px solid " + (isActive ? a.color : hasHistory ? "#2a4060" : "#1a3050"), borderRadius: "4px", padding: "5px 11px", cursor: "pointer", color: isActive ? a.color : hasHistory ? "#7a9ab8" : "#3a5878", fontSize: "10px", letterSpacing: "1px", whiteSpace: "nowrap", fontFamily: "inherit", position: "relative" }}>
+            <button key={a.id} onClick={() => setActiveAgent(a)} style={{ flexShrink: 0, background: isActive ? a.color + "22" : "transparent", border: "1px solid " + (isActive ? a.color : C.border), borderRadius: "3px", padding: "7px 14px", cursor: "pointer", color: isActive ? a.color : C.textMid, fontSize: "12px", letterSpacing: "0.5px", whiteSpace: "nowrap", fontFamily: "inherit", position: "relative", fontWeight: isActive ? 600 : 400, boxShadow: isActive ? "0 0 10px " + a.color + "40" : "none" }}>
               {a.icon} {a.name}
-              {hasHistory && !isActive && <span style={{ position: "absolute", top: "3px", right: "3px", width: "4px", height: "4px", borderRadius: "50%", background: a.color, opacity: 0.7 }} />}
+              {hasHistory && !isActive && <span style={{ position: "absolute", top: "3px", right: "3px", width: "4px", height: "4px", borderRadius: "50%", background: a.color }} />}
             </button>
           );
         })}
@@ -127,26 +172,35 @@ function App() {
       <div style={S.role}>▸ {activeAgent.role}</div>
       <div style={S.msgs}>
         {current.length === 0 && (
-          <div style={{ textAlign: "center", marginTop: "60px" }}>
-            <div style={{ fontSize: "28px" }}>{activeAgent.icon}</div>
-            <div style={{ fontSize: "10px", marginTop: "10px", color: activeAgent.color + "55", letterSpacing: "2px" }}>{activeAgent.name} ready</div>
+          <div style={{ textAlign: "center", marginTop: "80px" }}>
+            <div style={{ fontSize: "40px" }}>{activeAgent.icon}</div>
+            <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "12px", marginTop: "14px", color: activeAgent.color, letterSpacing: "2px" }}>{activeAgent.name.toUpperCase()}</div>
+            <div style={{ fontSize: "13px", marginTop: "10px", color: C.textMid, fontStyle: "italic" }}>{activeAgent.tagline}</div>
           </div>
         )}
         {current.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-            <div style={{ maxWidth: "84%", background: m.role === "user" ? "#111e35" : "#0e1928", border: "1px solid " + (m.role === "user" ? activeAgent.color + "50" : "#1e3050"), borderRadius: "5px", padding: "10px 14px", fontSize: "12px", lineHeight: "1.65", color: m.role === "user" ? "#d0e8ff" : "#b0c8e8", whiteSpace: "pre-wrap" }}>
-              {m.role === "assistant" && <div style={{ fontSize: "9px", color: activeAgent.color, marginBottom: "6px", letterSpacing: "2px" }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</div>}
+            <div style={{ maxWidth: "84%", background: m.role === "user" ? C.cyanDim : C.panel, border: "1px solid " + (m.role === "user" ? C.cyan + "60" : C.border), borderRadius: "4px", padding: "10px 14px", fontSize: "13px", lineHeight: "1.8", color: C.text, whiteSpace: "pre-wrap", boxShadow: m.role === "user" ? "0 0 12px rgba(0,200,255,0.15)" : "none" }}>
+              {m.role === "assistant" && <div style={{ fontSize: "9px", color: activeAgent.color, marginBottom: "7px", letterSpacing: "2px", fontWeight: 500 }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</div>}
               {m.content}
             </div>
           </div>
         ))}
-        {loading && <div style={{ color: activeAgent.color + "66", fontSize: "11px", letterSpacing: "2px" }}>{activeAgent.icon} thinking...</div>}
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: activeAgent.color, fontSize: "11px", letterSpacing: "1px" }}>
+            <span>{activeAgent.icon}</span>
+            <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>Thinking...</span>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
       <div style={S.inputRow}>
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()} placeholder={"Ask " + activeAgent.name + "..."}
-          style={{ flex: 1, background: "#0e1928", border: "1px solid #1e3050", borderRadius: "4px", padding: "10px 14px", color: "#d0e8ff", fontSize: "12px", outline: "none", fontFamily: "inherit" }} />
-        <button onClick={sendMessage} disabled={loading || !input.trim()} style={{ background: loading ? "#0e1928" : activeAgent.color + "22", border: "1px solid " + (loading ? "#1e3050" : activeAgent.color + "99"), borderRadius: "4px", padding: "10px 16px", color: loading ? "#2a4060" : activeAgent.color, cursor: loading ? "not-allowed" : "pointer", fontSize: "11px", letterSpacing: "1px", fontFamily: "inherit" }}>
+          style={{ flex: 1, background: C.bg, border: "1px solid " + C.border, borderRadius: "3px", padding: "10px 14px", color: C.text, fontSize: "13px", outline: "none", fontFamily: "inherit", transition: "border-color 0.2s, box-shadow 0.2s" }}
+          onFocus={e => { e.target.style.borderColor = C.cyan; e.target.style.boxShadow = "0 0 8px rgba(0,200,255,0.2)"; }}
+          onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+        />
+        <button onClick={sendMessage} disabled={loading || !input.trim()} style={{ background: loading || !input.trim() ? "transparent" : activeAgent.color, border: "1px solid " + (loading || !input.trim() ? C.border : activeAgent.color), borderRadius: "3px", padding: "10px 20px", color: loading || !input.trim() ? C.textDim : "#04080f", cursor: loading || !input.trim() ? "not-allowed" : "pointer", fontSize: "12px", letterSpacing: "1px", fontFamily: "inherit", fontWeight: 700, transition: "all 0.15s", boxShadow: loading || !input.trim() ? "none" : "0 0 12px " + activeAgent.color + "60" }}>
           SEND
         </button>
       </div>
@@ -155,6 +209,9 @@ function App() {
 }
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
+<style>
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
 </body>
 </html>`;
 
@@ -276,6 +333,73 @@ async function verifyStripeSignature(rawBody, sigHeader, secret) {
   return computed === sig;
 }
 
+// ── Alert agent routing ───────────────────────────────────────────────────────
+const ALERT_AGENTS = {
+  "pipeline-doctor": {
+    name: "Pipeline Doctor", icon: "⚙️",
+    system: "You are Pipeline Doctor, expert in CI/CD systems including GitHub Actions, Jenkins, CircleCI, and GitLab CI. When given a pipeline failure, identify the exact step that failed, root cause, and provide a numbered fix. Be concise and actionable. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "k8s-medic": {
+    name: "K8s Medic", icon: "🐳",
+    system: "You are K8s Medic, expert in Kubernetes. Diagnose pod crashes, OOMKills, deployment failures, node issues, and resource exhaustion. Give exact kubectl commands to investigate and fix. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "log-surgeon": {
+    name: "Log Surgeon", icon: "📋",
+    system: "You are Log Surgeon, expert at parsing error logs, stack traces, and anomaly patterns from any system. Identify the root cause from log data and give a precise fix. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "cost-sentinel": {
+    name: "Cost Sentinel", icon: "💰",
+    system: "You are Cost Sentinel, expert in cloud cost anomalies across GCP, AWS, and Azure. When given a spend alert, identify what caused the spike, which service or resource is responsible, and how to stop and prevent it. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "slo-watcher": {
+    name: "SLO Watcher", icon: "📊",
+    system: "You are SLO Watcher, expert in SLOs, SLAs, error budgets, and latency analysis. When given an SLO breach alert, diagnose what is causing the degradation and give exact remediation steps. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "db-analyst": {
+    name: "DB Analyst", icon: "🗄️",
+    system: "You are DB Analyst, expert in database performance across PostgreSQL, MySQL, MongoDB, and Redis. Diagnose slow queries, connection pool exhaustion, replication lag, and index issues. Give exact queries and config changes to fix. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "security-auditor": {
+    name: "Security Auditor", icon: "🛡️",
+    system: "You are Security Auditor, expert in cloud security, IAM misconfigurations, auth failures, and intrusion detection. When given a security alert, assess the threat level and provide immediate containment and remediation steps. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "api-guardian": {
+    name: "API Guardian", icon: "🔗",
+    system: "You are API Guardian, expert in API failures, rate limiting, upstream timeouts, and gateway errors. Diagnose what is failing and why, and give exact steps to restore service and prevent recurrence. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "data-pipeline-doctor": {
+    name: "Data Pipeline Doctor", icon: "🔄",
+    system: "You are Data Pipeline Doctor, expert in ETL/ELT failures, schema drift, data quality issues, and ingestion pipeline breakdowns. Diagnose the failure and give exact steps to restore the pipeline and prevent data loss. Format: SEVERITY / ROOT CAUSE / FIX STEPS."
+  },
+  "incident-commander": {
+    name: "Incident Commander", icon: "🎯",
+    system: "You are Incident Commander, a senior SRE who coordinates multi-system incidents. Given an alert, identify all affected systems, establish a timeline, prioritize remediation, and give a clear incident response plan. Format: SEVERITY / AFFECTED SYSTEMS / IMPACT / IMMEDIATE ACTIONS / ROOT CAUSE INVESTIGATION."
+  },
+};
+
+function routeAlert(alert) {
+  const combined = [alert.type, alert.title, alert.source, alert.details].join(" ").toLowerCase();
+  if (/pipeline|ci[\s_-]?cd|deploy|github.action|jenkins|circleci|build.fail/.test(combined)) return ALERT_AGENTS["pipeline-doctor"];
+  if (/k8s|kubernetes|pod|container|oomkill|evict|node.not.ready|crashloop/.test(combined)) return ALERT_AGENTS["k8s-medic"];
+  if (/cost|spend|budget|billing|quota.exceed|usage.spike/.test(combined)) return ALERT_AGENTS["cost-sentinel"];
+  if (/slo|sla|error.budget|latency|p99|p95|error.rate/.test(combined)) return ALERT_AGENTS["slo-watcher"];
+  if (/database|postgres|mysql|mongo|redis|slow.query|replication|connection.pool/.test(combined)) return ALERT_AGENTS["db-analyst"];
+  if (/security|iam|permission|unauth|breach|intrusion|firewall|vuln/.test(combined)) return ALERT_AGENTS["security-auditor"];
+  if (/api|rate.limit|timeout|upstream|gateway|503|504/.test(combined)) return ALERT_AGENTS["api-guardian"];
+  if (/etl|schema.drift|data.quality|ingestion|pipeline/.test(combined)) return ALERT_AGENTS["data-pipeline-doctor"];
+  if (/log|error.spike|anomaly|stackdriver|cloudwatch/.test(combined)) return ALERT_AGENTS["log-surgeon"];
+  return ALERT_AGENTS["incident-commander"];
+}
+
+async function hmacHex(message, secret) {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const raw = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -299,6 +423,17 @@ function isRateLimited(ip, limit = 30, windowMs = 60000) {
     return { limited: true, firstHit };
   }
   return { limited: false, firstHit: false };
+}
+
+async function alertSecurityBreach(env, type, details) {
+  if (!env.SLACK_WEBHOOK_URL) return;
+  await fetch(env.SLACK_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: `🚨 <!channel> *SECURITY ALERT — ${type}*\n${details}\n*Time:* ${new Date().toUTCString()}`
+    })
+  }).catch(() => {});
 }
 
 export default {
@@ -409,6 +544,7 @@ export default {
       let stripeStatus = "Not configured";
       let slackStatus = env.SLACK_WEBHOOK_URL ? "Configured" : "Not configured";
       let subscribers = [];
+      let apiKeys = [];
 
       try { await env.MEMORY.get("_health"); } catch { kvStatus = "ERROR"; }
 
@@ -429,7 +565,21 @@ export default {
         } catch { stripeStatus = "Error"; }
       }
 
-      const adminHTML = \`<!DOCTYPE html>
+      // List provisioned alert customers
+      if (env.MEMORY) {
+        try {
+          const list = await env.MEMORY.list({ prefix: "apikey:" });
+          for (const k of list.keys) {
+            const val = await env.MEMORY.get(k.name);
+            if (val) {
+              const d = JSON.parse(val);
+              apiKeys.push({ key: k.name.replace("apikey:", ""), email: d.email, name: d.name, created_at: d.created_at || "", slack: d.slack_webhook ? "✓" : "✗" });
+            }
+          }
+        } catch {}
+      }
+
+      const adminHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -467,30 +617,85 @@ export default {
   <div class="card">
     <h2>SYSTEM STATUS</h2>
     <div class="row"><span class="label">Worker</span><span class="val ok">Online</span></div>
-    <div class="row"><span class="label">KV Memory</span><span class="val \${kvStatus === 'OK' ? 'ok' : 'err'}">\${kvStatus}</span></div>
-    <div class="row"><span class="label">Stripe</span><span class="val \${stripeStatus === 'Connected' ? 'ok' : 'err'}">\${stripeStatus}</span></div>
-    <div class="row"><span class="label">Slack</span><span class="val \${slackStatus === 'Configured' ? 'ok' : 'err'}">\${slackStatus}</span></div>
-    <div class="row"><span class="label">Active Subscribers</span><span class="val ok">\${subCount}</span></div>
+    <div class="row"><span class="label">KV Memory</span><span class="val ${kvStatus === 'OK' ? 'ok' : 'err'}">${kvStatus}</span></div>
+    <div class="row"><span class="label">Stripe</span><span class="val ${stripeStatus === 'Connected' ? 'ok' : 'err'}">${stripeStatus}</span></div>
+    <div class="row"><span class="label">Slack</span><span class="val ${slackStatus === 'Configured' ? 'ok' : 'err'}">${slackStatus}</span></div>
+    <div class="row"><span class="label">Active Subscribers</span><span class="val ok">${subCount}</span></div>
   </div>
   <div class="card">
     <h2>SUBSCRIBERS</h2>
-    \${subscribers.length === 0 ? '<div style="color:#2a5070;font-size:13px">No active subscribers yet.</div>' :
-      subscribers.map(s => \`<div class="sub-item">\${s.email} — \${s.status}\${s.trial_end ? ' (trial until ' + s.trial_end + ')' : ''}</div>\`).join('')}
+    ${subscribers.length === 0 ? '<div style="color:#2a5070;font-size:13px">No active subscribers yet.</div>' :
+      subscribers.map(s => `<div class="sub-item">${s.email} — ${s.status}${s.trial_end ? ' (trial until ' + s.trial_end + ')' : ''}</div>`).join('')}
+  </div>
+  <div class="card">
+    <h2>ALERT CUSTOMERS (${apiKeys.length})</h2>
+    ${apiKeys.length === 0 ? '<div style="color:#2a5070;font-size:13px">No customers provisioned yet.</div>' :
+      apiKeys.map(k => `<div class="sub-item" style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <span style="color:#d0eeff">${k.name}</span><span style="color:#2a5070">${k.email}</span>
+        <span style="color:#00c8ff;font-size:11px">${k.key}</span><span style="color:#2a5070;font-size:11px">Slack ${k.slack} · ${k.created_at ? k.created_at.slice(0,10) : 'unknown'}</span>
+      </div>`).join('')}
+  </div>
+  <div class="card">
+    <h2>PROVISION CUSTOMER</h2>
+    <form id="provision-form" style="display:flex;flex-direction:column;gap:12px">
+      <input id="prov-email" placeholder="customer@example.com" style="background:#04080f;border:1px solid #0d2040;color:#d0eeff;padding:8px 12px;font-family:inherit;font-size:13px;outline:none" />
+      <input id="prov-name" placeholder="Company / customer name" style="background:#04080f;border:1px solid #0d2040;color:#d0eeff;padding:8px 12px;font-family:inherit;font-size:13px;outline:none" />
+      <input id="prov-slack" placeholder="https://hooks.slack.com/... (optional)" style="background:#04080f;border:1px solid #0d2040;color:#d0eeff;padding:8px 12px;font-family:inherit;font-size:13px;outline:none" />
+      <button type="submit" style="background:#00c8ff;color:#04080f;border:none;padding:10px 20px;font-family:inherit;font-weight:700;font-size:13px;letter-spacing:1px;cursor:pointer">PROVISION KEY</button>
+    </form>
+    <pre id="prov-result" style="margin-top:16px;background:#04080f;border:1px solid #0d2040;padding:12px;font-size:12px;color:#00c8ff;white-space:pre-wrap;display:none"></pre>
+    <script>
+    document.getElementById('provision-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const result = document.getElementById('prov-result');
+      result.style.display = 'block';
+      result.textContent = 'Provisioning...';
+      try {
+        const res = await fetch('/admin/provision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_email: document.getElementById('prov-email').value.trim(),
+            name: document.getElementById('prov-name').value.trim(),
+            slack_webhook: document.getElementById('prov-slack').value.trim()
+          })
+        });
+        const data = await res.json();
+        result.textContent = JSON.stringify(data, null, 2);
+        if (res.ok) { document.getElementById('provision-form').reset(); }
+      } catch(err) { result.textContent = 'Error: ' + err.message; }
+    });
+    </script>
   </div>
   <div class="card">
     <h2>QUICK LINKS</h2>
     <div class="links">
       <a href="/agents">Agents</a>
+      <a href="/test-slack">Test Slack</a>
       <a href="/logout">Logout</a>
       <a href="/">Home</a>
     </div>
   </div>
 </div>
 </body>
-</html>\`;
+</html>`;
       return new Response(adminHTML, {
         headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
       });
+    }
+
+    // GET /test-slack — owner-only, fires a test message to Slack
+    if (url.pathname === "/test-slack" && request.method === "GET") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return new Response("Forbidden", { status: 403 });
+      if (!env.SLACK_WEBHOOK_URL) return new Response("SLACK_WEBHOOK_URL not set", { status: 503 });
+      const res = await fetch(env.SLACK_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: `🧪 *Agent9 Slack Test*\nWorker is online and Slack is connected.\n*Time:* ${new Date().toUTCString()}` })
+      });
+      return new Response(res.ok ? "Slack OK" : `Slack error: ${res.status}`, { status: res.ok ? 200 : 500 });
     }
 
     // GET /logout — clear cookie and redirect home
@@ -584,8 +789,8 @@ export default {
       const { model, max_tokens, system, messages } = body;
 
       const claudePayload = {
-        model: model || "claude-sonnet-4-20250514",
-        max_tokens: max_tokens || 1000,
+        model: model || "claude-sonnet-4-6",
+        max_tokens: max_tokens || 16000,
         messages: messages || [],
       };
       if (system) claudePayload.system = system;
@@ -603,7 +808,7 @@ export default {
       const claudeData = await claudeResponse.json();
       return new Response(JSON.stringify(claudeData), {
         status: claudeResponse.status,
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
       });
     }
 
@@ -648,9 +853,9 @@ export default {
       if (env.STRIPE_WEBHOOK_SECRET) {
         const valid = await verifyStripeSignature(rawBody, sig || "", env.STRIPE_WEBHOOK_SECRET);
         if (!valid) {
-        await alertSecurityBreach(env, "INVALID STRIPE SIGNATURE", `IP: ${ip}\nPossible webhook forgery attempt`);
-        return new Response("Invalid signature", { status: 400 });
-      }
+          await alertSecurityBreach(env, "INVALID STRIPE SIGNATURE", `IP: ${ip}\nPossible webhook forgery attempt`);
+          return new Response("Invalid signature", { status: 400 });
+        }
       }
 
       let event;
@@ -708,69 +913,142 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
-    // POST / — infrastructure alert handler (no origin check — external monitoring tools send alerts)
-    if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/alert")) {
+    // POST /alert — authenticated inbound alert from customer monitoring system
+    if (url.pathname === "/alert" && request.method === "POST") {
+      const apiKey = request.headers.get("X-FX-Key") || "";
+      const signature = request.headers.get("X-FX-Signature") || "";
+      const timestamp = request.headers.get("X-FX-Timestamp") || "";
+      const rawBody = await request.text();
+
+      // Filter GraphQL scanner probes
+      try { const p = JSON.parse(rawBody); if (p.query?.includes("__schema")) return new Response("OK", { status: 200 }); } catch {}
+
+      if (!apiKey) return new Response("Missing X-FX-Key header", { status: 401, headers: SECURITY_HEADERS });
+
+      const customerRaw = env.MEMORY ? await env.MEMORY.get(`apikey:${apiKey}`) : null;
+      if (!customerRaw) {
+        await alertSecurityBreach(env, "INVALID ALERT API KEY", `IP: ${ip}\nKey: ${apiKey.slice(0,8)}...`);
+        return new Response("Invalid API key", { status: 401, headers: SECURITY_HEADERS });
+      }
+      const customer = JSON.parse(customerRaw);
+
+      // Verify HMAC signature (timestamp within 5 min + body)
+      if (signature) {
+        const ts = parseInt(timestamp);
+        if (isNaN(ts) || Math.abs(Date.now() - ts) > 300000) {
+          return new Response("Timestamp expired", { status: 401, headers: SECURITY_HEADERS });
+        }
+        const expected = await hmacHex(`${timestamp}.${rawBody}`, customer.secret);
+        if (expected !== signature) {
+          await alertSecurityBreach(env, "INVALID ALERT SIGNATURE", `Customer: ${customer.email}\nIP: ${ip}`);
+          return new Response("Invalid signature", { status: 401, headers: SECURITY_HEADERS });
+        }
+      }
+
       let alert;
-      try {
-        alert = await request.json();
-      } catch {
-        return new Response("Invalid JSON", { status: 400 });
-      }
+      try { alert = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      if (!alert || Object.keys(alert).length === 0) return new Response("OK", { status: 200 });
 
-      // Filter junk: empty payloads and GraphQL scanner probes
-      const keys = Object.keys(alert);
-      if (keys.length === 0) return new Response("OK", { status: 200 });
-      if (alert.query && typeof alert.query === "string" && alert.query.includes("__schema")) {
-        return new Response("OK", { status: 200 });
-      }
+      // Route to correct agent
+      const agent = routeAlert(alert);
+      const alertText = alert.message || alert.details || alert.text || alert.description || JSON.stringify(alert);
 
-      const alertText = alert.message || alert.text || alert.description || JSON.stringify(alert);
-
-      // Claude diagnosis
-      let diagnosis = "No diagnosis available.";
+      // Claude analysis
+      let analysis = "Analysis unavailable.";
       if (env.ANTHROPIC_API_KEY) {
         try {
           const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": env.ANTHROPIC_API_KEY,
-              "anthropic-version": "2023-06-01",
-            },
+            headers: { "Content-Type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
             body: JSON.stringify({
-              model: "claude-sonnet-4-20250514",
+              model: "claude-sonnet-4-6",
               max_tokens: 1000,
-              messages: [{
-                role: "user",
-                content: `You are Agent9, an elite infrastructure remediation AI. Analyze this alert, diagnose the root cause, and provide a clear fix.
-
-Alert:
-${alertText}
-
-Respond in this format:
-SEVERITY: [LOW / MEDIUM / CRITICAL]
-DIAGNOSIS: (what is wrong and why)
-RECOMMENDED FIX: (exact steps to resolve)`,
-              }],
+              system: agent.system,
+              messages: [{ role: "user", content: `Alert from ${customer.name}:\n\nTitle: ${alert.title || "Untitled"}\nSource: ${alert.source || "unknown"}\nSeverity: ${alert.severity || "unknown"}\n\nDetails:\n${alertText}` }],
             }),
           });
-          const claudeData = await claudeRes.json();
-          diagnosis = claudeData.content?.[0]?.text || diagnosis;
+          const d = await claudeRes.json();
+          analysis = d.content?.[0]?.text || analysis;
         } catch {}
       }
 
-      // Post to Slack
-      if (env.SLACK_WEBHOOK_URL) {
-        await fetch(env.SLACK_WEBHOOK_URL, {
+      // Deliver to customer's Slack
+      const severityEmoji = { critical: "🚨", medium: "⚠️", low: "ℹ️" }[(alert.severity||"").toLowerCase()] || "🔔";
+      const slackTarget = customer.slack_webhook || env.SLACK_WEBHOOK_URL;
+      if (slackTarget) {
+        await fetch(slackTarget, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: `🚨 *Agent9 Alert*\n\n*Alert:*\n${alertText}\n\n*Diagnosis:*\n${diagnosis}`,
-          }),
+            text: `${severityEmoji} *${agent.icon} ${agent.name}* — ${alert.title || "Alert"}\n*Customer:* ${customer.name}\n\n${analysis}\n\n_fixitagent.ai_`
+          })
         }).catch(() => {});
       }
 
-      return new Response("OK", { status: 200 });
+      return new Response(JSON.stringify({ ok: true, agent: agent.name }), {
+        headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
+      });
+    }
+
+    // POST /alert/test — customer verifies their API key + Slack integration
+    if (url.pathname === "/alert/test" && request.method === "POST") {
+      const apiKey = request.headers.get("X-FX-Key") || "";
+      if (!apiKey) return new Response("Missing X-FX-Key header", { status: 401, headers: SECURITY_HEADERS });
+      const customerRaw = env.MEMORY ? await env.MEMORY.get(`apikey:${apiKey}`) : null;
+      if (!customerRaw) return new Response("Invalid API key", { status: 401, headers: SECURITY_HEADERS });
+      const customer = JSON.parse(customerRaw);
+
+      const slackTarget = customer.slack_webhook || env.SLACK_WEBHOOK_URL;
+      let slackOk = false;
+      if (slackTarget) {
+        const res = await fetch(slackTarget, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: `✅ *FX Agents — Integration Test*\n*Customer:* ${customer.name}\n*API Key:* ${apiKey.slice(0,12)}...\nYour alert integration is working correctly.\n_fixitagent.ai_` })
+        }).catch(() => null);
+        slackOk = res?.ok || false;
+      }
+
+      return new Response(JSON.stringify({
+        ok: true,
+        customer: customer.name,
+        endpoint: "https://fixitagent.ai/alert",
+        slack: slackTarget ? (slackOk ? "delivered" : "failed") : "not configured",
+      }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
+    }
+
+    // POST /admin/provision — create customer API key + secret (owner only)
+    if (url.pathname === "/admin/provision" && request.method === "POST") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return new Response("Forbidden", { status: 403 });
+      let body;
+      try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      const { customer_email, slack_webhook, name } = body;
+      if (!customer_email) return new Response("customer_email required", { status: 400 });
+
+      const keyBytes = new Uint8Array(16);
+      const secretBytes = new Uint8Array(32);
+      crypto.getRandomValues(keyBytes);
+      crypto.getRandomValues(secretBytes);
+      const apiKey = "fxa_" + Array.from(keyBytes).map(b => b.toString(16).padStart(2,"0")).join("").slice(0,24);
+      const secret = Array.from(secretBytes).map(b => b.toString(16).padStart(2,"0")).join("");
+
+      if (env.MEMORY) {
+        await env.MEMORY.put(`apikey:${apiKey}`, JSON.stringify({
+          email: customer_email,
+          slack_webhook: slack_webhook || "",
+          name: name || customer_email,
+          secret,
+          created_at: new Date().toISOString(),
+        }));
+      }
+      return new Response(JSON.stringify({
+        api_key: apiKey,
+        secret,
+        endpoint: "https://fixitagent.ai/alert",
+        headers: { "X-FX-Key": apiKey, "X-FX-Signature": "HMAC-SHA256(timestamp.body, secret)", "X-FX-Timestamp": "Date.now()" }
+      }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
     }
 
     return env.ASSETS.fetch(request);

@@ -26,19 +26,20 @@
 - Customer post-payment flow: Stripe checkout → /verify-checkout sets KV + auth cookie → lands on /agents (no separate login needed)
 - SLACK_WEBHOOK_URL still needs to be added to Cloudflare env vars if Slack test fails
 
-## 2026-04-11 (continued)
-- Built the real product: authenticated alert layer
-  - POST /alert — X-FX-Key + HMAC-SHA256 signature + timestamp replay protection
-  - Per-customer API keys in KV (apikey:{key} → {email, slack_webhook, name, secret})
-  - Alert routing to 10 specialized agents by keyword matching
-  - Fix delivered to customer's own Slack webhook
-  - Security breach alerts on invalid key/signature
-- POST /admin/provision (owner-only) — generates API key + secret for a customer
-- 10 new engineering agents added to chat UI + alert routing:
-  Pipeline Doctor, K8s Medic, Log Surgeon, Cost Sentinel, SLO Watcher,
-  DB Analyst, Security Auditor, API Guardian, Data Pipeline Doctor, Incident Commander
-- Now 20 agents total in the chat UI
-- Dark Tron theme applied to /agents — matches login page (navy #04080f, cyan #00c8ff)
-- agents.html added to .assetsignore — was being served as static file bypassing worker
-- Customer onboarding flow: POST /admin/provision → get key+secret → customer points monitoring at /alert → fix auto-posts to their Slack
-- Context approaching limit — stop and save before next session
+## 2026-04-12
+- Upgraded alert layer: /admin now lists all provisioned API keys (email, name, key prefix, Slack status, created date)
+- Added inline Provision Customer form to /admin — no more curl needed, shows key+secret JSON on submit
+- Added POST /alert/test — customers verify API key + Slack delivery before going live
+- All feature branch work (alert layer, 20 agents, Tron UI, auth, Stripe) merged to main and deployed
+- Full security hardening deployed:
+  - Replaced in-memory rate limiter with CF distributed RateLimit bindings (RL_GLOBAL 60/min, RL_API 15/min)
+    - Configured in wrangler.jsonc under unsafe.bindings — globally enforced across all CF edge nodes
+  - Added Cloudflare threat score check: requests with score >50 blocked on /api, /alert, /login, /checkout, /admin
+  - /api now requires valid session cookie + active KV subscription — origin/referer-only auth was bypassable
+  - Alert signature now required (was optional) — unsigned requests with valid key rejected
+  - verifySessionCookie and alert HMAC now use crypto.subtle.verify (timing-safe, no string comparison)
+  - Added HSTS (max-age=31536000 + preload), CSP, X-Permitted-Cross-Domain-Policies to all responses
+  - SESSION_SECRET env var separates session signing from STRIPE_WEBHOOK_SECRET
+  - Removed agent9.rojasjay.workers.dev from allowed origins
+- SESSION_SECRET added to Cloudflare Worker secrets (generate with: openssl rand -hex 32)
+- Dev branch: claude/catch-up-wdOyZ (merged to main)

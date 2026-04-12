@@ -701,6 +701,7 @@ export default {
     <h2>QUICK LINKS</h2>
     <div class="links">
       <a href="/agents">Agents</a>
+      <a href="/admin/security-eval">Security Eval</a>
       <a href="/test-slack">Test Slack</a>
       <a href="/logout">Logout</a>
       <a href="/">Home</a>
@@ -712,6 +713,134 @@ export default {
       return new Response(adminHTML, {
         headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
       });
+    }
+
+    // GET /admin/security-eval — owner-only security scorecard
+    if (url.pathname === "/admin/security-eval" && request.method === "GET") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return new Response("Forbidden", { status: 403 });
+
+      const checks = [];
+      const pass = (name, detail) => checks.push({ name, status: "PASS", detail });
+      const fail = (name, detail) => checks.push({ name, status: "FAIL", detail });
+      const warn = (name, detail) => checks.push({ name, status: "WARN", detail });
+
+      // 1. Env vars / secrets
+      env.SESSION_SECRET        ? pass("SESSION_SECRET set",        "Session signing isolated from Stripe secret")
+                                : fail("SESSION_SECRET set",        "Missing — sessions fall back to STRIPE_WEBHOOK_SECRET");
+      env.ANTHROPIC_API_KEY     ? pass("ANTHROPIC_API_KEY set",     "Claude API calls will work")
+                                : fail("ANTHROPIC_API_KEY set",     "Missing — agents chat broken");
+      env.STRIPE_SECRET_KEY     ? pass("STRIPE_SECRET_KEY set",     "Checkout and webhook lookups will work")
+                                : fail("STRIPE_SECRET_KEY set",     "Missing — payments broken");
+      env.STRIPE_WEBHOOK_SECRET ? pass("STRIPE_WEBHOOK_SECRET set", "Stripe webhook signature verification active")
+                                : fail("STRIPE_WEBHOOK_SECRET set", "Missing — webhook forgery possible");
+      env.SLACK_WEBHOOK_URL     ? pass("SLACK_WEBHOOK_URL set",     "Security alerts will deliver")
+                                : warn("SLACK_WEBHOOK_URL set",     "Missing — security breach alerts are silent");
+      env.OWNER_EMAIL           ? pass("OWNER_EMAIL set",           env.OWNER_EMAIL)
+                                : warn("OWNER_EMAIL set",           "Falling back to hardcoded rojasjay@gmail.com");
+
+      // 2. Rate limiting bindings
+      env.RL_GLOBAL ? pass("RL_GLOBAL binding",  "Distributed rate limiting active (60 req/min)")
+                    : fail("RL_GLOBAL binding",  "Not bound — rate limiting is disabled");
+      env.RL_API    ? pass("RL_API binding",     "Tight Claude API rate limiting active (15 req/min)")
+                    : fail("RL_API binding",     "Not bound — /api has no extra rate limit");
+
+      // 3. KV binding
+      if (env.MEMORY) {
+        try {
+          await env.MEMORY.get("_security_eval_probe");
+          pass("KV binding", "MEMORY namespace accessible");
+        } catch { fail("KV binding", "MEMORY.get() threw — KV may be misconfigured"); }
+      } else { fail("KV binding", "MEMORY binding not present"); }
+
+      // 4. Live endpoint probes (self-test)
+      const base = `https://${url.hostname}`;
+
+      // /api should reject unauthenticated requests
+      try {
+        const r = await fetch(`${base}/api`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        r.status === 401 ? pass("/api auth gate",     "Unauthenticated POST → 401 as expected")
+                         : fail("/api auth gate",     `Expected 401, got ${r.status} — auth gate may be broken`);
+      } catch (e) { warn("/api auth gate", `Probe failed: ${e.message}`); }
+
+      // /alert should reject unsigned requests
+      try {
+        const r = await fetch(`${base}/alert`, { method: "POST", headers: { "Content-Type": "application/json", "X-FX-Key": "fxa_probe_fake" }, body: "{}" });
+        r.status === 401 ? pass("/alert signature required", "Unsigned request → 401 as expected")
+                         : fail("/alert signature required", `Expected 401, got ${r.status}`);
+      } catch (e) { warn("/alert signature required", `Probe failed: ${e.message}`); }
+
+      // /agents should redirect unauthenticated users
+      try {
+        const r = await fetch(`${base}/agents`, { redirect: "manual" });
+        (r.status === 302 || r.status === 301) ? pass("/agents auth gate", "Unauthenticated → redirect as expected")
+                                               : fail("/agents auth gate", `Expected redirect, got ${r.status}`);
+      } catch (e) { warn("/agents auth gate", `Probe failed: ${e.message}`); }
+
+      // HSTS header present
+      try {
+        const r = await fetch(`${base}/login`);
+        r.headers.get("Strict-Transport-Security")
+          ? pass("HSTS header", r.headers.get("Strict-Transport-Security"))
+          : fail("HSTS header", "Missing from /login response");
+      } catch (e) { warn("HSTS header", `Probe failed: ${e.message}`); }
+
+      // CSP header present
+      try {
+        const r = await fetch(`${base}/login`);
+        r.headers.get("Content-Security-Policy")
+          ? pass("CSP header", "Content-Security-Policy present")
+          : fail("CSP header", "Missing from /login response");
+      } catch (e) { warn("CSP header", `Probe failed: ${e.message}`); }
+
+      const passed = checks.filter(c => c.status === "PASS").length;
+      const failed = checks.filter(c => c.status === "FAIL").length;
+      const warned = checks.filter(c => c.status === "WARN").length;
+      const score = Math.round((passed / checks.length) * 100);
+
+      const rowColor = s => s === "PASS" ? "#00c8ff" : s === "FAIL" ? "#ff4e4e" : "#fbbf24";
+      const evalHTML = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Security Eval — fixitagent.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#04080f;color:#8ec8e8;font-family:'IBM Plex Mono',monospace;padding:40px 20px}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,160,255,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,160,255,0.07) 1px,transparent 1px);background-size:60px 60px}
+.wrap{max-width:780px;margin:0 auto;position:relative;z-index:1}
+.logo{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:#d0eeff;letter-spacing:2px;margin-bottom:8px;text-shadow:0 0 20px rgba(0,200,255,0.5)}.logo span{color:#00c8ff}
+h1{font-family:'Orbitron',monospace;font-size:22px;color:#d0eeff;margin-bottom:6px}
+.score{font-family:'Orbitron',monospace;font-size:48px;color:${score >= 90 ? '#00c8ff' : score >= 70 ? '#fbbf24' : '#ff4e4e'};text-shadow:0 0 30px ${score >= 90 ? 'rgba(0,200,255,0.5)' : score >= 70 ? 'rgba(251,191,36,0.5)' : 'rgba(255,78,78,0.5)'};margin:24px 0 4px}
+.summary{color:#2a5070;font-size:13px;margin-bottom:32px}
+.card{border:1px solid #0d2040;background:#070d1a;padding:24px;margin-bottom:16px}
+.card h2{font-family:'Orbitron',monospace;font-size:12px;color:#00c8ff;letter-spacing:2px;margin-bottom:16px}
+.row{display:grid;grid-template-columns:160px 60px 1fr;gap:8px;padding:8px 0;border-bottom:1px solid #0d2040;font-size:12px;align-items:start}
+.row:last-child{border:none}
+.check-name{color:#8ec8e8}
+.status{font-weight:700;font-size:11px;letter-spacing:1px}
+.detail{color:#2a5070}
+.links{margin-top:24px;display:flex;gap:16px}
+.links a{color:#00c8ff;font-size:13px;text-decoration:none}
+</style></head><body>
+<div class="wrap">
+<div class="logo">FX<span>AGENT</span></div>
+<h1>Security Evaluation</h1>
+<div class="score">${score}%</div>
+<div class="summary">${passed} passed · ${warned} warnings · ${failed} failed · ${new Date().toUTCString()}</div>
+<div class="card">
+<h2>RESULTS</h2>
+${checks.map(c => `<div class="row">
+  <span class="check-name">${c.name}</span>
+  <span class="status" style="color:${rowColor(c.status)}">${c.status}</span>
+  <span class="detail">${c.detail}</span>
+</div>`).join('')}
+</div>
+<div class="links"><a href="/admin">← Admin</a><a href="/admin/security-eval">Re-run</a></div>
+</div></body></html>`;
+
+      return new Response(evalHTML, { headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS } });
     }
 
     // GET /test-slack — owner-only, fires a test message to Slack

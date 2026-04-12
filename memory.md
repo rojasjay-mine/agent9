@@ -50,8 +50,20 @@
 - Fixed login broken by threat score check blocking /login — removed /login from threat-score sensitive paths
 - Fixed empty sessionSecret crash — fallback is now "fx-agent9-session-default-v1" not ""
 - Sandbox secrets hardened — dropdown embeds key only, signing done server-side in /admin/sign-alert (no self-request, inlined)
-- OPEN ISSUE: sandbox still hangs on "SENDING..." — Claude API call inside /admin/sign-alert is timing out
-  - Fix needed: add AbortSignal.timeout(20000) to Claude fetch, add skip_claude option for routing-only test
-  - Also verify ANTHROPIC_API_KEY is set in Cloudflare env vars
 - Provisioned first test customer via /admin → Provision Customer form
 - Slack webhook needed on provisioned customer OR SLACK_WEBHOOK_URL set in CF env vars for alerts to deliver
+
+## 2026-04-12 (session 3)
+- Fixed sandbox hang: added AbortSignal.timeout(20000) to Claude fetch in /admin/sign-alert and /alert
+- Fixed sandbox hang: added AbortSignal.timeout(10000) to Slack fetch in /admin/sign-alert and /alert
+- Added "SKIP CLAUDE" checkbox to sandbox UI — tests routing + Slack delivery without waiting on Claude
+- CLOUDFLARE_API_TOKEN was expired — refreshed in GitHub repo secrets, deploys now working again
+- SESSION_SECRET generated this session: a4354d782c730a968178a0dab5730ad063d31a87c61bc4e27728a0c40ca38c43
+- Dev branch: claude/catch-up-NV6Js (all committed and pushed to main)
+
+## Cloudflare env vars status (as of 2026-04-12)
+STILL NEED TO ADD to dash.cloudflare.com → Workers & Pages → agent9 → Settings → Variables and Secrets:
+- STRIPE_SECRET_KEY — sk_live_... (from Stripe dashboard → Developers → API Keys)
+- STRIPE_WEBHOOK_SECRET — whsec_bAPLGxBo2XEQ8dJOVYBTFxopxVvtWaoR
+- (SESSION_SECRET, ANTHROPIC_API_KEY, SLACK_WEBHOOK_URL may already be added this session)
+After adding, run fixitagent.ai/admin/security-eval to verify all green.

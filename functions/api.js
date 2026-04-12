@@ -701,6 +701,7 @@ export default {
     <h2>QUICK LINKS</h2>
     <div class="links">
       <a href="/agents">Agents</a>
+      <a href="/admin/sandbox">Alert Sandbox</a>
       <a href="/admin/security-eval">Security Eval</a>
       <a href="/test-slack">Test Slack</a>
       <a href="/logout">Logout</a>
@@ -713,6 +714,237 @@ export default {
       return new Response(adminHTML, {
         headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS }
       });
+    }
+
+    // GET /admin/sandbox — owner-only interactive alert sandbox
+    if (url.pathname === "/admin/sandbox" && request.method === "GET") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
+      if (email !== ownerEmail) return new Response("Forbidden", { status: 403 });
+
+      // Load provisioned keys for the dropdown
+      let apiKeys = [];
+      if (env.MEMORY) {
+        try {
+          const list = await env.MEMORY.list({ prefix: "apikey:" });
+          for (const k of list.keys) {
+            const val = await env.MEMORY.get(k.name);
+            if (val) {
+              const d = JSON.parse(val);
+              apiKeys.push({ key: k.name.replace("apikey:", ""), name: d.name, email: d.email, secret: d.secret });
+            }
+          }
+        } catch {}
+      }
+
+      const sandboxHTML = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Alert Sandbox — fixitagent.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#04080f;color:#8ec8e8;font-family:'IBM Plex Mono',monospace;padding:40px 20px}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,160,255,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,160,255,0.07) 1px,transparent 1px);background-size:60px 60px}
+.wrap{max-width:780px;margin:0 auto;position:relative;z-index:1}
+.logo{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:#d0eeff;letter-spacing:2px;margin-bottom:8px;text-shadow:0 0 20px rgba(0,200,255,0.5)}.logo span{color:#00c8ff}
+h1{font-family:'Orbitron',monospace;font-size:22px;color:#d0eeff;margin-bottom:32px}
+.card{border:1px solid #0d2040;background:#070d1a;padding:24px;margin-bottom:16px}
+.card h2{font-family:'Orbitron',monospace;font-size:12px;color:#00c8ff;letter-spacing:2px;margin-bottom:20px}
+label{display:block;color:#2a5070;font-size:11px;letter-spacing:1px;margin-bottom:6px;margin-top:14px}
+label:first-of-type{margin-top:0}
+input,select,textarea{width:100%;background:#04080f;border:1px solid #0d2040;color:#d0eeff;padding:9px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:#00c8ff}
+select option{background:#04080f}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{background:#00c8ff;color:#04080f;border:none;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;letter-spacing:1px;cursor:pointer;margin-top:20px;width:100%}
+button:disabled{opacity:0.4;cursor:not-allowed}
+.result{margin-top:16px}
+.result-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.result-label{font-size:11px;letter-spacing:1px;color:#2a5070}
+.badge{font-size:11px;font-weight:700;padding:3px 8px;letter-spacing:1px}
+.badge.ok{color:#04080f;background:#00c8ff}
+.badge.err{color:#04080f;background:#ff4e4e}
+pre{background:#04080f;border:1px solid #0d2040;padding:14px;font-size:12px;white-space:pre-wrap;word-break:break-all;color:#8ec8e8;max-height:300px;overflow-y:auto}
+.curl-box{margin-top:12px}
+.curl-label{font-size:11px;color:#2a5070;letter-spacing:1px;margin-bottom:6px}
+.links{margin-top:24px;display:flex;gap:16px}
+.links a{color:#00c8ff;font-size:13px;text-decoration:none}
+.preset-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.preset{background:transparent;border:1px solid #0d2040;color:#2a5070;padding:5px 10px;font-family:inherit;font-size:11px;cursor:pointer;letter-spacing:1px;width:auto;margin-top:0}
+.preset:hover{border-color:#00c8ff;color:#00c8ff}
+</style>
+</head><body>
+<div class="wrap">
+<div class="logo">FX<span>AGENT</span></div>
+<h1>Alert Sandbox</h1>
+
+<div class="card">
+<h2>CUSTOMER</h2>
+<label>SELECT CUSTOMER (provisioned)</label>
+<select id="customer-select" onchange="onCustomerChange()">
+  <option value="">— select or enter manually below —</option>
+  ${apiKeys.map(k => `<option value="${k.key}|${k.secret}">${k.name} (${k.email}) — ${k.key.slice(0,16)}...</option>`).join('')}
+</select>
+<div class="row2">
+  <div>
+    <label>API KEY</label>
+    <input id="api-key" placeholder="fxa_..." />
+  </div>
+  <div>
+    <label>SECRET</label>
+    <input id="api-secret" placeholder="hex secret" type="password" />
+  </div>
+</div>
+</div>
+
+<div class="card">
+<h2>ALERT PAYLOAD</h2>
+<div style="margin-bottom:4px;font-size:11px;color:#2a5070;letter-spacing:1px">PRESETS</div>
+<div class="preset-row">
+  <button class="preset" onclick="loadPreset('k8s')">K8s OOMKill</button>
+  <button class="preset" onclick="loadPreset('pipeline')">CI Failure</button>
+  <button class="preset" onclick="loadPreset('db')">DB Slow Query</button>
+  <button class="preset" onclick="loadPreset('cost')">Cost Spike</button>
+  <button class="preset" onclick="loadPreset('slo')">SLO Breach</button>
+  <button class="preset" onclick="loadPreset('security')">Security Alert</button>
+  <button class="preset" onclick="loadPreset('api')">API Gateway 503</button>
+</div>
+<div class="row2">
+  <div>
+    <label>TITLE</label>
+    <input id="alert-title" placeholder="Pod OOMKilled in production" />
+  </div>
+  <div>
+    <label>SEVERITY</label>
+    <select id="alert-severity">
+      <option value="critical">critical</option>
+      <option value="medium">medium</option>
+      <option value="low">low</option>
+    </select>
+  </div>
+</div>
+<div class="row2" style="margin-top:0">
+  <div>
+    <label>TYPE / SOURCE</label>
+    <input id="alert-type" placeholder="kubernetes" />
+  </div>
+  <div>
+    <label>SOURCE</label>
+    <input id="alert-source" placeholder="prod-cluster-us-east-1" />
+  </div>
+</div>
+<label>MESSAGE / DETAILS</label>
+<textarea id="alert-message" rows="4" placeholder="Container memory limit exceeded. Last restart: 2m ago. Restarts: 5."></textarea>
+<button id="send-btn" onclick="sendAlert()">SEND ALERT →</button>
+</div>
+
+<div id="result-section" style="display:none">
+<div class="card">
+<h2>RESPONSE</h2>
+<div class="result">
+  <div class="result-header">
+    <span class="result-label">HTTP STATUS</span>
+    <span id="status-badge" class="badge"></span>
+  </div>
+  <pre id="response-body"></pre>
+</div>
+</div>
+<div class="card">
+<h2>REQUEST SENT</h2>
+<div class="curl-label">CURL EQUIVALENT</div>
+<pre id="curl-output"></pre>
+</div>
+</div>
+
+<div class="links"><a href="/admin">← Admin</a><a href="/admin/security-eval">Security Eval</a></div>
+</div>
+
+<script>
+const PRESETS = {
+  k8s: { title:"Pod OOMKilled in production", type:"kubernetes", source:"prod-cluster-us-east-1", severity:"critical", message:"Container web-api in namespace production was OOMKilled. Memory limit: 512Mi. Peak usage: 511Mi. Restarts in last hour: 5. Last restart: 2 minutes ago." },
+  pipeline: { title:"CI pipeline failed on main", type:"github-actions", source:"rojasjay/agent9", severity:"medium", message:"Workflow deploy.yml failed at step 'Deploy to Cloudflare'. Exit code 1. Error: CLOUDFLARE_API_TOKEN expired. 3 consecutive failures." },
+  db: { title:"Postgres slow query detected", type:"database", source:"prod-postgres-primary", severity:"medium", message:"Query avg latency exceeded threshold: SELECT * FROM orders JOIN users took 8.4s avg over last 5 min. Table: orders (12M rows). Missing index on created_at." },
+  cost: { title:"GCP billing spike — $400 over budget", type:"cost", source:"gcp-billing-alert", severity:"medium", message:"Daily spend $1,240 vs $840 budget. BigQuery: +$280 (unexpected full table scans). Cloud Run: +$120 (autoscaled to 50 instances at 14:32 UTC)." },
+  slo: { title:"Error rate SLO breached", type:"slo", source:"datadog-monitor", severity:"critical", message:"Error rate 4.2% over last 30 min. SLO threshold: 1%. Error budget burned: 78% in 6 hours. Endpoints affected: POST /api/orders (503s), GET /api/users (timeout)." },
+  security: { title:"Multiple failed auth attempts", type:"security", source:"cloudflare-waf", severity:"critical", message:"185 failed login attempts from IP 45.33.32.156 over 10 min. Targeting /admin, /login. Credential stuffing pattern detected. Country: RU." },
+  api: { title:"API Gateway returning 503s", type:"api", source:"uptime-monitor", severity:"critical", message:"POST /api/payments returning 503 for last 8 min. Upstream timeout to payments-service. 1,240 failed requests. Circuit breaker open. Revenue impact: ~$12k." },
+};
+
+function loadPreset(key) {
+  const p = PRESETS[key];
+  document.getElementById('alert-title').value = p.title;
+  document.getElementById('alert-type').value = p.type;
+  document.getElementById('alert-source').value = p.source;
+  document.getElementById('alert-severity').value = p.severity;
+  document.getElementById('alert-message').value = p.message;
+}
+
+function onCustomerChange() {
+  const val = document.getElementById('customer-select').value;
+  if (!val) return;
+  const [key, secret] = val.split('|');
+  document.getElementById('api-key').value = key;
+  document.getElementById('api-secret').value = secret;
+}
+
+async function hmacSign(message, secret) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const raw = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return Array.from(new Uint8Array(raw)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function sendAlert() {
+  const apiKey = document.getElementById('api-key').value.trim();
+  const secret = document.getElementById('api-secret').value.trim();
+  if (!apiKey || !secret) { alert('API key and secret required'); return; }
+
+  const payload = {
+    title: document.getElementById('alert-title').value.trim(),
+    type: document.getElementById('alert-type').value.trim(),
+    source: document.getElementById('alert-source').value.trim(),
+    severity: document.getElementById('alert-severity').value,
+    message: document.getElementById('alert-message').value.trim(),
+  };
+  const body = JSON.stringify(payload);
+  const timestamp = String(Date.now());
+  const signature = await hmacSign(timestamp + '.' + body, secret);
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true; btn.textContent = 'SENDING...';
+
+  let status, responseText;
+  try {
+    const res = await fetch('/alert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-FX-Key': apiKey, 'X-FX-Signature': signature, 'X-FX-Timestamp': timestamp },
+      body,
+    });
+    status = res.status;
+    responseText = await res.text();
+  } catch(e) { responseText = 'Network error: ' + e.message; status = 0; }
+
+  const badge = document.getElementById('status-badge');
+  badge.textContent = status;
+  badge.className = 'badge ' + (status === 200 ? 'ok' : 'err');
+  document.getElementById('response-body').textContent = (() => { try { return JSON.stringify(JSON.parse(responseText), null, 2); } catch { return responseText; } })();
+  document.getElementById('curl-output').textContent =
+\`curl -X POST https://fixitagent.ai/alert \\
+  -H "Content-Type: application/json" \\
+  -H "X-FX-Key: \${apiKey}" \\
+  -H "X-FX-Signature: \${signature}" \\
+  -H "X-FX-Timestamp: \${timestamp}" \\
+  -d '\${body}'\`;
+
+  document.getElementById('result-section').style.display = 'block';
+  document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+  btn.disabled = false; btn.textContent = 'SEND ALERT →';
+}
+</script>
+</body></html>`;
+
+      return new Response(sandboxHTML, { headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS } });
     }
 
     // GET /admin/security-eval — owner-only security scorecard

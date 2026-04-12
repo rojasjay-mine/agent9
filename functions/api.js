@@ -501,10 +501,11 @@ export default {
       return new Response("Payload too large", { status: 413, headers: SECURITY_HEADERS });
     }
 
-    // Cloudflare threat score — block known bad actors on sensitive paths
+    // Cloudflare threat score — block known bad actors
+    // /login excluded so legitimate users on flagged IPs can still authenticate
     const threatScore = request.cf?.threatScore ?? 0;
-    const sensitivePath = ["/api", "/alert", "/login", "/checkout", "/admin"].some(p => url.pathname.startsWith(p));
-    if (threatScore > 50 && sensitivePath) {
+    const threatSensitive = ["/api", "/alert", "/checkout", "/admin"].some(p => url.pathname.startsWith(p));
+    if (threatScore > 50 && threatSensitive) {
       return new Response("Forbidden", { status: 403, headers: SECURITY_HEADERS });
     }
 
@@ -523,8 +524,9 @@ export default {
     const ALLOWED = ["https://fixitagent.ai", "https://www.fixitagent.ai"];
     const fromSite = ALLOWED.some(a => origin.startsWith(a) || referer.startsWith(a));
 
-    // Session secret — dedicated env var, falls back to Stripe secret only if not set
-    const sessionSecret = env.SESSION_SECRET || env.STRIPE_WEBHOOK_SECRET || "";
+    // Session secret — dedicated env var, falls back to Stripe secret, then a non-empty default
+    // Non-empty fallback prevents crypto.subtle.importKey throwing on empty key
+    const sessionSecret = env.SESSION_SECRET || env.STRIPE_WEBHOOK_SECRET || "fx-agent9-session-default-v1";
     const cookieHeader = request.headers.get("Cookie") || "";
 
     // GET /login — serve login page
@@ -547,19 +549,24 @@ export default {
         if (env.MEMORY) {
           await env.MEMORY.put(`subscriber:${email}`, JSON.stringify({ status: "active", customerId: "owner" }));
         }
-        const token = await signSession(email, sessionSecret);
-        return new Response("OK", { status: 200, headers: { "Set-Cookie": authCookie(token), ...SECURITY_HEADERS } });
+        try {
+          const token = await signSession(email, sessionSecret);
+          return new Response("OK", { status: 200, headers: { "Set-Cookie": authCookie(token), ...SECURITY_HEADERS } });
+        } catch (e) {
+          return new Response("Session signing failed — check SESSION_SECRET in Worker env vars", { status: 500 });
+        }
       }
 
       const subRaw = env.MEMORY ? await env.MEMORY.get(`subscriber:${email}`) : null;
       if (!subRaw) return new Response("No active subscription found for that email.", { status: 403 });
       const sub = JSON.parse(subRaw);
       if (sub.status !== "active") return new Response("Your subscription is no longer active.", { status: 403 });
-      const token = await signSession(email, sessionSecret);
-      return new Response("OK", {
-        status: 200,
-        headers: { "Set-Cookie": authCookie(token), ...SECURITY_HEADERS }
-      });
+      try {
+        const token = await signSession(email, sessionSecret);
+        return new Response("OK", { status: 200, headers: { "Set-Cookie": authCookie(token), ...SECURITY_HEADERS } });
+      } catch (e) {
+        return new Response("Session signing failed — check SESSION_SECRET in Worker env vars", { status: 500 });
+      }
     }
 
     // GET /admin — owner-only dashboard (system status, subscribers, health)

@@ -932,8 +932,8 @@ curl -X POST https://fixitagent.ai/alert \\
       return new Response(sandboxHTML, { headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS } });
     }
 
-    // POST /admin/sign-alert — owner-only server-side alert signing (sandbox use)
-    // Secret never leaves the server — browser only sends the API key + payload
+    // POST /admin/sign-alert — owner-only sandbox alert processor
+    // Inlines alert logic directly — no self-request, avoids chained worker timeout
     if (url.pathname === "/admin/sign-alert" && request.method === "POST") {
       const email = await verifySessionCookie(cookieHeader, sessionSecret);
       const ownerEmail = (env.OWNER_EMAIL || "rojasjay@gmail.com").toLowerCase();
@@ -948,24 +948,43 @@ curl -X POST https://fixitagent.ai/alert \\
       if (!customerRaw) return new Response("Unknown API key", { status: 404 });
       const customer = JSON.parse(customerRaw);
 
-      const alertBody = JSON.stringify(alert);
-      const timestamp = String(Date.now());
-      const signature = await hmacHex(`${timestamp}.${alertBody}`, customer.secret);
+      // Route and analyse inline — same logic as /alert but no subrequest overhead
+      const agent = routeAlert(alert);
+      const alertText = alert.message || alert.details || alert.text || alert.description || JSON.stringify(alert);
 
-      // Proxy to /alert with signed headers
-      const alertRes = await fetch(`https://${url.hostname}/alert`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-FX-Key": api_key,
-          "X-FX-Signature": signature,
-          "X-FX-Timestamp": timestamp,
-        },
-        body: alertBody,
-      });
-      const alertData = await alertRes.text();
-      return new Response(alertData, {
-        status: alertRes.status,
+      let analysis = "Analysis unavailable.";
+      if (env.ANTHROPIC_API_KEY) {
+        try {
+          const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-6",
+              max_tokens: 1000,
+              system: agent.system,
+              messages: [{ role: "user", content: `Alert from ${customer.name}:\n\nTitle: ${alert.title || "Untitled"}\nSource: ${alert.source || "unknown"}\nSeverity: ${alert.severity || "unknown"}\n\nDetails:\n${alertText}` }],
+            }),
+          });
+          const d = await claudeRes.json();
+          analysis = d.content?.[0]?.text || analysis;
+        } catch {}
+      }
+
+      const severityEmoji = { critical: "🚨", medium: "⚠️", low: "ℹ️" }[(alert.severity||"").toLowerCase()] || "🔔";
+      const slackTarget = customer.slack_webhook || env.SLACK_WEBHOOK_URL;
+      let slackStatus = "not configured";
+      if (slackTarget) {
+        const sr = await fetch(slackTarget, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `${severityEmoji} *${agent.icon} ${agent.name}* — ${alert.title || "Alert"}\n*Customer:* ${customer.name}\n\n${analysis}\n\n_fixitagent.ai_`
+          })
+        }).catch(() => null);
+        slackStatus = sr?.ok ? "delivered" : "failed";
+      }
+
+      return new Response(JSON.stringify({ ok: true, agent: agent.name, slack: slackStatus, analysis }), {
         headers: { "Content-Type": "application/json", ...SECURITY_HEADERS },
       });
     }

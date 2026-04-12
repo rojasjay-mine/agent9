@@ -988,7 +988,8 @@ curl -X POST https://fixitagent.ai/alert \\
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: `${severityEmoji} *${agent.icon} ${agent.name}* — ${alert.title || "Alert"}\n*Customer:* ${customer.name}\n\n${analysis}\n\n_fixitagent.ai_`
-          })
+          }),
+          signal: AbortSignal.timeout(10000),
         }).catch(() => null);
         slackStatus = sr?.ok ? "delivered" : "failed";
       }
@@ -1435,7 +1436,8 @@ ${checks.map(c => `<div class="row">
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: `${severityEmoji} *${agent.icon} ${agent.name}* — ${alert.title || "Alert"}\n*Customer:* ${customer.name}\n\n${analysis}\n\n_fixitagent.ai_`
-          })
+          }),
+          signal: AbortSignal.timeout(10000),
         }).catch(() => {});
       }
 

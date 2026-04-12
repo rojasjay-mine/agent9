@@ -833,7 +833,12 @@ pre{background:#04080f;border:1px solid #0d2040;padding:14px;font-size:12px;whit
 </div>
 <label>MESSAGE / DETAILS</label>
 <textarea id="alert-message" rows="4" placeholder="Container memory limit exceeded. Last restart: 2m ago. Restarts: 5."></textarea>
+<div style="display:flex;align-items:center;gap:16px;margin-top:16px">
 <button id="send-btn" onclick="sendAlert()">SEND ALERT →</button>
+<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#2a5070;cursor:pointer">
+  <input type="checkbox" id="skip-claude" style="width:14px;height:14px;accent-color:#00c8ff"> SKIP CLAUDE (routing + Slack only)
+</label>
+</div>
 </div>
 
 <div id="result-section" style="display:none">
@@ -898,7 +903,7 @@ async function sendAlert() {
     const res = await fetch('/admin/sign-alert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: apiKey, alert: payload }),
+      body: JSON.stringify({ api_key: apiKey, alert: payload, skip_claude: document.getElementById('skip-claude').checked }),
     });
     status = res.status;
     responseText = await res.text();
@@ -952,8 +957,9 @@ curl -X POST https://fixitagent.ai/alert \\
       const agent = routeAlert(alert);
       const alertText = alert.message || alert.details || alert.text || alert.description || JSON.stringify(alert);
 
-      let analysis = "Analysis unavailable.";
-      if (env.ANTHROPIC_API_KEY) {
+      const skipClaude = body.skip_claude === true;
+      let analysis = "Analysis skipped.";
+      if (!skipClaude && env.ANTHROPIC_API_KEY) {
         try {
           const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
@@ -964,10 +970,13 @@ curl -X POST https://fixitagent.ai/alert \\
               system: agent.system,
               messages: [{ role: "user", content: `Alert from ${customer.name}:\n\nTitle: ${alert.title || "Untitled"}\nSource: ${alert.source || "unknown"}\nSeverity: ${alert.severity || "unknown"}\n\nDetails:\n${alertText}` }],
             }),
+            signal: AbortSignal.timeout(20000),
           });
           const d = await claudeRes.json();
-          analysis = d.content?.[0]?.text || analysis;
-        } catch {}
+          analysis = d.content?.[0]?.text || "Analysis unavailable.";
+        } catch { analysis = "Analysis unavailable (Claude timeout or error)."; }
+      } else if (!skipClaude) {
+        analysis = "Analysis unavailable (ANTHROPIC_API_KEY not set).";
       }
 
       const severityEmoji = { critical: "🚨", medium: "⚠️", low: "ℹ️" }[(alert.severity||"").toLowerCase()] || "🔔";
@@ -1410,6 +1419,7 @@ ${checks.map(c => `<div class="row">
               system: agent.system,
               messages: [{ role: "user", content: `Alert from ${customer.name}:\n\nTitle: ${alert.title || "Untitled"}\nSource: ${alert.source || "unknown"}\nSeverity: ${alert.severity || "unknown"}\n\nDetails:\n${alertText}` }],
             }),
+            signal: AbortSignal.timeout(20000),
           });
           const d = await claudeRes.json();
           analysis = d.content?.[0]?.text || analysis;

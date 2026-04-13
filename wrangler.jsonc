@@ -1,6 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/wrangler.json",
   "name": "agent9",
+  "account_id": "6b2fdf0e036db269314e45966c0ff757",
   "main": "functions/api.js",
   "compatibility_date": "2025-09-27",
   "observability": {

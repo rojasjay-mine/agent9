@@ -75,7 +75,7 @@
   - WORKER_STRIPE_SECRET_KEY — Stripe live key
   - WORKER_SLACK_WEBHOOK_URL — Slack webhook URL
 - Once those 3 are added, deploy will run and push all secrets to Cloudflare correctly
-- Agents will be broken until those 3 GitHub secrets are added
+- DONE — all 3 added, deploy green, agents working, security eval all green
 
 ## 2026-04-13
 - Fixed GitHub Actions deploy: Node 20 deprecated → bumped to Node 22, forced Node 24 for actions

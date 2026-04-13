@@ -8,14 +8,22 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 6b2fdf0e036db269314e45966c0ff757
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm install
+      - name: Push secrets to Cloudflare
+        run: |
+          echo "${{ secrets.WORKER_ANTHROPIC_API_KEY }}" | npx wrangler@3 secret put ANTHROPIC_API_KEY
+          echo "${{ secrets.WORKER_STRIPE_SECRET_KEY }}" | npx wrangler@3 secret put STRIPE_SECRET_KEY
+          echo "${{ secrets.WORKER_SLACK_WEBHOOK_URL }}" | npx wrangler@3 secret put SLACK_WEBHOOK_URL
+          echo "whsec_bAPLGxBo2XEQ8dJOVYBTFxopxVvtWaoR" | npx wrangler@3 secret put STRIPE_WEBHOOK_SECRET
+          echo "a4354d782c730a968178a0dab5730ad063d31a87c61bc4e27728a0c40ca38c43" | npx wrangler@3 secret put SESSION_SECRET
+          echo "rojasjay@gmail.com" | npx wrangler@3 secret put OWNER_EMAIL
       - name: Deploy
         run: npx wrangler@3 deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: 6b2fdf0e036db269314e45966c0ff757

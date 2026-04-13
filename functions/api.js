@@ -1043,37 +1043,42 @@ curl -X POST https://fixitagent.ai/alert \\
 
       // /api should reject unauthenticated requests
       try {
-        const r = await fetch(`${base}/api`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        const r = await fetch(`${base}/api`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", signal: AbortSignal.timeout(5000) });
         r.status === 401 ? pass("/api auth gate",     "Unauthenticated POST → 401 as expected")
-                         : fail("/api auth gate",     `Expected 401, got ${r.status} — auth gate may be broken`);
+        : r.status === 522 ? warn("/api auth gate",  "Probe timed out (522) — self-requests may be restricted")
+                           : fail("/api auth gate",  `Expected 401, got ${r.status} — auth gate may be broken`);
       } catch (e) { warn("/api auth gate", `Probe failed: ${e.message}`); }
 
       // /alert should reject unsigned requests
       try {
-        const r = await fetch(`${base}/alert`, { method: "POST", headers: { "Content-Type": "application/json", "X-FX-Key": "fxa_probe_fake" }, body: "{}" });
+        const r = await fetch(`${base}/alert`, { method: "POST", headers: { "Content-Type": "application/json", "X-FX-Key": "fxa_probe_fake" }, body: "{}", signal: AbortSignal.timeout(5000) });
         r.status === 401 ? pass("/alert signature required", "Unsigned request → 401 as expected")
-                         : fail("/alert signature required", `Expected 401, got ${r.status}`);
+        : r.status === 522 ? warn("/alert signature required", "Probe timed out (522) — self-requests may be restricted")
+                           : fail("/alert signature required", `Expected 401, got ${r.status}`);
       } catch (e) { warn("/alert signature required", `Probe failed: ${e.message}`); }
 
       // /agents should redirect unauthenticated users
       try {
-        const r = await fetch(`${base}/agents`, { redirect: "manual" });
+        const r = await fetch(`${base}/agents`, { redirect: "manual", signal: AbortSignal.timeout(5000) });
         (r.status === 302 || r.status === 301) ? pass("/agents auth gate", "Unauthenticated → redirect as expected")
-                                               : fail("/agents auth gate", `Expected redirect, got ${r.status}`);
+        : r.status === 522               ? warn("/agents auth gate", "Probe timed out (522) — self-requests may be restricted")
+                                         : fail("/agents auth gate", `Expected redirect, got ${r.status}`);
       } catch (e) { warn("/agents auth gate", `Probe failed: ${e.message}`); }
 
       // HSTS header present
       try {
-        const r = await fetch(`${base}/login`);
-        r.headers.get("Strict-Transport-Security")
+        const r = await fetch(`${base}/login`, { signal: AbortSignal.timeout(5000) });
+        r.status === 522 ? warn("HSTS header", "Probe timed out (522) — self-requests may be restricted")
+        : r.headers.get("Strict-Transport-Security")
           ? pass("HSTS header", r.headers.get("Strict-Transport-Security"))
           : fail("HSTS header", "Missing from /login response");
       } catch (e) { warn("HSTS header", `Probe failed: ${e.message}`); }
 
       // CSP header present
       try {
-        const r = await fetch(`${base}/login`);
-        r.headers.get("Content-Security-Policy")
+        const r = await fetch(`${base}/login`, { signal: AbortSignal.timeout(5000) });
+        r.status === 522 ? warn("CSP header", "Probe timed out (522) — self-requests may be restricted")
+        : r.headers.get("Content-Security-Policy")
           ? pass("CSP header", "Content-Security-Policy present")
           : fail("CSP header", "Missing from /login response");
       } catch (e) { warn("CSP header", `Probe failed: ${e.message}`); }

@@ -61,6 +61,22 @@
 - SESSION_SECRET generated this session: a4354d782c730a968178a0dab5730ad063d31a87c61bc4e27728a0c40ca38c43
 - Dev branch: claude/catch-up-NV6Js (all committed and pushed to main)
 
+## 2026-04-13 (session 2)
+- Wrangler v4 deploys broke secrets — v4 Versions model detached them from the worker
+- Fixed CI: reverted to wrangler@3 deploy, added account_id to wrangler.jsonc
+- Fixed security-eval: 522 self-probe errors now show as WARN not FAIL
+- Fixed SSRF: slack_webhook URL validated to https://hooks.slack.com only on /admin/provision
+- Added OWNER_EMAIL to Cloudflare secrets (rojasjay@gmail.com)
+- Secrets still not loading into worker — wrangler v4 detached them
+- Fix: workflow now runs `wrangler secret put` for all 6 secrets on every deploy
+- Secrets hardcoded in workflow: STRIPE_WEBHOOK_SECRET, SESSION_SECRET, OWNER_EMAIL
+- Still need user to add to GitHub repo secrets (Settings → Secrets → Actions):
+  - WORKER_ANTHROPIC_API_KEY — Anthropic key
+  - WORKER_STRIPE_SECRET_KEY — Stripe live key
+  - WORKER_SLACK_WEBHOOK_URL — Slack webhook URL
+- Once those 3 are added, deploy will run and push all secrets to Cloudflare correctly
+- Agents will be broken until those 3 GitHub secrets are added
+
 ## 2026-04-13
 - Fixed GitHub Actions deploy: Node 20 deprecated → bumped to Node 22, forced Node 24 for actions
 - Replaced cloudflare/wrangler-action@v3 with direct `npx wrangler@4 deploy` (action was broken with Node 24)

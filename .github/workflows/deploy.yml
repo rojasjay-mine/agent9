@@ -17,6 +17,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm install
+      - name: Deploy
+        run: npx wrangler@3 deploy
       - name: Push secrets to Cloudflare
         run: |
           echo "${{ secrets.WORKER_ANTHROPIC_API_KEY }}" | npx wrangler@3 secret put ANTHROPIC_API_KEY
@@ -25,5 +27,3 @@ jobs:
           echo "whsec_bAPLGxBo2XEQ8dJOVYBTFxopxVvtWaoR" | npx wrangler@3 secret put STRIPE_WEBHOOK_SECRET
           echo "a4354d782c730a968178a0dab5730ad063d31a87c61bc4e27728a0c40ca38c43" | npx wrangler@3 secret put SESSION_SECRET
           echo "rojasjay@gmail.com" | npx wrangler@3 secret put OWNER_EMAIL
-      - name: Deploy
-        run: npx wrangler@3 deploy

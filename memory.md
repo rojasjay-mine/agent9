@@ -88,6 +88,7 @@
 - Dev branch: claude/catch-up-N2izs (merged to main)
 
 ## 2026-04-13 (session 3)
+- Fixed CI: deploy before pushing secrets — wrangler@3 requires deployed version first (was failing with "Secret edit failed")
 - Redesigned landing page (index.html) — replaced Tron dark theme with light clean professional design
   - Font: Inter (was Orbitron + IBM Plex Mono)
   - Background: #f8fafc soft white-grey (was #04080f black)

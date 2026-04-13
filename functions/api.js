@@ -1482,6 +1482,16 @@ ${checks.map(c => `<div class="row">
       try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
       const { customer_email, slack_webhook, name } = body;
       if (!customer_email) return new Response("customer_email required", { status: 400 });
+      if (slack_webhook) {
+        try {
+          const wh = new URL(slack_webhook);
+          if (wh.protocol !== "https:" || wh.hostname !== "hooks.slack.com") {
+            return new Response("slack_webhook must be a https://hooks.slack.com URL", { status: 400 });
+          }
+        } catch {
+          return new Response("slack_webhook is not a valid URL", { status: 400 });
+        }
+      }
 
       const keyBytes = new Uint8Array(16);
       const secretBytes = new Uint8Array(32);

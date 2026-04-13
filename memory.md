@@ -1,5 +1,13 @@
 # Session Memory
 
+## 2026-04-13 (session 4)
+- Catch-up session — no code changes
+- User installing Git + Claude Desktop locally
+- Confirmed: repo/CI/Cloudflare unaffected by local installs
+- Claude Desktop starts fresh but CLAUDE.md + memory.md carry project context
+- Site status: live, all green, first paying customer is the goal
+- Dev branch: claude/catch-up-INFic
+
 ## 2026-04-10
 - Fixed missing `alertSecurityBreach` function — was causing ReferenceError on all security events (rate limit, unauthorized access, oversized payload, invalid Stripe sig)
 - Added SECURITY_HEADERS to /api proxy response

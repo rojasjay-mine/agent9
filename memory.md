@@ -87,6 +87,16 @@
 - Stripe key: recommended using restricted key (Checkout Sessions write, Customers read, Subscriptions read)
 - Dev branch: claude/catch-up-N2izs (merged to main)
 
+## 2026-04-13 (session 3)
+- Redesigned landing page (index.html) — replaced Tron dark theme with light clean professional design
+  - Font: Inter (was Orbitron + IBM Plex Mono)
+  - Background: #f8fafc soft white-grey (was #04080f black)
+  - Accent: #0ea5e9 sky blue (was #00c8ff cyan)
+  - Cards: white with #e2e8f0 borders + subtle shadows
+  - Removed: animated grid, scan line, all glow effects
+  - Nav: frosted white, pricing cards rounded, terminal widget light grey
+- Dev branch: claude/catch-up-ArCur (merged to main, deployed)
+
 ## Cloudflare env vars status (as of 2026-04-13)
 ALL SET — all 5 secrets confirmed in Cloudflare Worker:
 - ANTHROPIC_API_KEY ✓

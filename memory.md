@@ -61,9 +61,21 @@
 - SESSION_SECRET generated this session: a4354d782c730a968178a0dab5730ad063d31a87c61bc4e27728a0c40ca38c43
 - Dev branch: claude/catch-up-NV6Js (all committed and pushed to main)
 
-## Cloudflare env vars status (as of 2026-04-12)
-STILL NEED TO ADD to dash.cloudflare.com → Workers & Pages → agent9 → Settings → Variables and Secrets:
-- STRIPE_SECRET_KEY — sk_live_... (from Stripe dashboard → Developers → API Keys)
-- STRIPE_WEBHOOK_SECRET — whsec_bAPLGxBo2XEQ8dJOVYBTFxopxVvtWaoR
-- (SESSION_SECRET, ANTHROPIC_API_KEY, SLACK_WEBHOOK_URL may already be added this session)
-After adding, run fixitagent.ai/admin/security-eval to verify all green.
+## 2026-04-13
+- Fixed GitHub Actions deploy: Node 20 deprecated → bumped to Node 22, forced Node 24 for actions
+- Replaced cloudflare/wrangler-action@v3 with direct `npx wrangler@4 deploy` (action was broken with Node 24)
+- CLOUDFLARE_API_TOKEN was expired — regenerated using "Edit Cloudflare Workers" template (no IP restriction)
+- Added CLOUDFLARE_ACCOUNT_ID to workflow env — fixes error 9109 by skipping /memberships lookup
+- All 5 CF secrets now set: ANTHROPIC_API_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SESSION_SECRET, SLACK_WEBHOOK_URL
+- Deploys green — site live at fixitagent.ai
+- Stripe key: recommended using restricted key (Checkout Sessions write, Customers read, Subscriptions read)
+- Dev branch: claude/catch-up-N2izs (merged to main)
+
+## Cloudflare env vars status (as of 2026-04-13)
+ALL SET — all 5 secrets confirmed in Cloudflare Worker:
+- ANTHROPIC_API_KEY ✓
+- STRIPE_SECRET_KEY ✓
+- STRIPE_WEBHOOK_SECRET ✓
+- SESSION_SECRET ✓
+- SLACK_WEBHOOK_URL ✓
+Run fixitagent.ai/admin/security-eval to verify all green.

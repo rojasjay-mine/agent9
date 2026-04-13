@@ -15,7 +15,7 @@ jobs:
           node-version: '22'
       - run: npm install
       - name: Deploy
-        run: npx wrangler@4 deploy
+        run: npx wrangler@3 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 6b2fdf0e036db269314e45966c0ff757

@@ -3,7 +3,7 @@ const AGENTS_HTML = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Mirror — Your AI Twin</title>
+<title>AI U — Your Working Representative</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -129,7 +129,7 @@ function App() {
 
       {/* HEADER */}
       <div style={{ padding: "12px 20px", borderBottom: "1px solid " + C.border, background: C.panel, display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-        <span style={{ fontWeight: 800, fontSize: "16px", letterSpacing: "-0.5px" }}>mir<span style={{ color: M.accent }}>ror</span></span>
+        <span style={{ fontWeight: 800, fontSize: "16px", letterSpacing: "-0.5px" }}>AI <span style={{ color: M.accent }}>U</span></span>
         <div style={{ marginLeft: "4px", display: "flex", gap: "4px" }}>
           {Object.values(MODES).map(m => (
             <button key={m.id} onClick={() => { setMode(m.id); save("mirror-mode", m.id); }}

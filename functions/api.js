@@ -3,205 +3,228 @@ const AGENTS_HTML = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FX Agents</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Mirror — Your AI Twin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #04080f;
-    color: #8ec8e8;
-    font-family: 'IBM Plex Mono', 'Courier New', monospace;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image: linear-gradient(rgba(0,160,255,0.07) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(0,160,255,0.07) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #04080f; }
-  ::-webkit-scrollbar-thumb { background: #0d2040; border-radius: 2px; }
-  input::placeholder { color: #1a3a5c; }
-  #loading-screen {
-    position: fixed; inset: 0; background: #04080f;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Orbitron', monospace; font-size: 13px;
-    color: #00c8ff; letter-spacing: 3px; z-index: 999;
-    text-shadow: 0 0 20px rgba(0,200,255,0.6);
-  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#f8fafc;color:#0f172a;font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.6}
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
 </style>
 </head>
 <body>
-<div id="loading-screen">LOADING AGENTS...</div>
-<div id="root" style="position:relative;z-index:1"></div>
+<div id="root"></div>
 <script type="text/babel">
 const { useState, useRef, useEffect } = React;
 
-document.getElementById('loading-screen').style.display = 'none';
-
-const C = {
-  bg: "#04080f",
-  panel: "#070d1a",
-  border: "#0d2040",
-  borderActive: "#00c8ff",
-  text: "#d0eeff",
-  textDim: "#2a5070",
-  textMid: "#8ec8e8",
-  cyan: "#00c8ff",
-  cyanDim: "#004466",
+const MODES = {
+  professional: {
+    id: "professional",
+    label: "Professional",
+    accent: "#2563eb",
+    accentLight: "#eff6ff",
+    placeholder: "Talk to your twin...",
+    emptyTitle: "Your Professional Clone",
+    emptyDesc: "Your twin knows your expertise, your positions, and your voice. Use it to draft responses, handle conversations, or think through decisions — as you.",
+    buildSystem: (ctx) => ctx
+      ? "You are the AI twin of this person. Respond exactly as they would — using their voice, their knowledge, their judgment, and their history. Never break character. If asked if you're AI, acknowledge it but stay in their voice.\n\nEverything you know about this person:\n" + ctx
+      : "You are a professional AI twin. The user is building their twin — they haven't uploaded their context yet. Encourage them to click 'My Context' to upload notes about themselves so you can truly represent them. For now, respond helpfully to whatever they ask.",
+  },
+  companion: {
+    id: "companion",
+    label: "Companion",
+    accent: "#7c3aed",
+    accentLight: "#f5f3ff",
+    placeholder: "Talk to your companion...",
+    emptyTitle: "Your Personal Companion",
+    emptyDesc: "Your companion already knows everything you've shared. Talk through anything — no judgment, no re-explaining. It remembers.",
+    buildSystem: (ctx) => ctx
+      ? "You are a warm, deeply personal AI companion. You already know everything about this person from what they've shared below. You are supportive, honest, and never judgmental. You remember their history. You ask thoughtful follow-up questions. You never give generic advice — you speak to their specific situation.\n\nEverything you know about this person:\n" + ctx
+      : "You are a warm AI companion. The person hasn't uploaded their personal context yet — encourage them to click 'My Context' to share their story so you can truly know them. For now, be a kind, attentive listener.",
+  },
 };
 
-const AGENTS = [
-  { id: "webhook-doctor", name: "Webhook Doctor", icon: "🩺", color: "#ff4e4e", tagline: "Paste the error. I'll diagnose it.", role: "Diagnoses 405 errors, POST handling, Cloudflare Pages function syntax", system: "You are Webhook Doctor, an expert in Cloudflare Pages Functions, REST APIs, and webhook debugging. You specialize in fixing 405 Method Not Allowed errors, POST request handling, and Cloudflare Pages function syntax. Be concise, numbered steps. Give exact code fixes." },
-  { id: "cloudflare-copilot", name: "Cloudflare Copilot", icon: "☁️", color: "#f6821f", tagline: "Tell me where you're stuck. I'll walk you through it.", role: "Step-by-step Cloudflare Pages & Workers navigation", system: "You are Cloudflare Copilot, an expert in Cloudflare Pages, Workers, DNS, environment variables, and the 2026 Cloudflare dashboard UI. Give exact step-by-step navigation instructions. Be precise about UI locations. Never guess." },
-  { id: "code-surgeon", name: "Code Surgeon", icon: "🔬", color: "#00ff88", tagline: "Show me the code. I'll fix it.", role: "Rewrites and fixes JS for Cloudflare Pages Functions", system: "You are Code Surgeon, an expert JavaScript developer specializing in Cloudflare Pages Functions syntax. You rewrite functions/api.js to work correctly on Pages not Workers. Output clean, complete, copy-paste-ready code. No explanations unless asked." },
-  { id: "slack-wrangler", name: "Slack Wrangler", icon: "💬", color: "#a855f7", tagline: "Webhook broken? Rotating keys? On it.", role: "Slack webhook setup, rotation, and testing", system: "You are Slack Wrangler, an expert in Slack Incoming Webhooks, Slack App configuration, webhook rotation, and testing via Hoppscotch. Give exact numbered steps. Understand security best practices around credential rotation." },
-  { id: "deploy-commander", name: "Deploy Commander", icon: "🚀", color: "#00c8ff", tagline: "Ready to deploy. What needs shipping?", role: "Manual deploy sequences for Cloudflare Pages via GitHub", system: "You are Deploy Commander, an expert in manual deployment workflows for Cloudflare Pages using GitHub. Specialize in: edit file on GitHub, commit, trigger manual redeploy on Cloudflare Pages. Give numbered steps, exact file paths, flag ordering errors." },
-  { id: "error-analyst", name: "Error Analyst", icon: "🔍", color: "#fbbf24", tagline: "Paste the log. Root cause in seconds.", role: "Reads error logs and gives root-cause fixes", system: "You are Error Analyst, an expert at reading raw error logs, HTTP responses, and stack traces. When given error output, immediately identify root cause and give a numbered fix. Direct, no hedging." },
-  { id: "tiktok-brain", name: "TikTok Brain", icon: "🎵", color: "#ff2d78", tagline: "Tell me your angle. I'll build the strategy.", role: "Organic TikTok strategy for mouth tape dropshipping", system: "You are TikTok Brain, an expert in faceless organic TikTok content strategy for dropshipping. Specialize in mouth tape / sleep strip niche. Know hook formulas, content angles, trending sounds, drive traffic without showing a face. Be tactical." },
-  { id: "substack-ghost", name: "Substack Ghost", icon: "✍️", color: "#fb923c", tagline: "Give me the topic. I'll write the issue.", role: "Drafts A.I. Can Teach It newsletter content", system: "You are Substack Ghost, ghostwriter for A.I. Can Teach It, a beginner AI newsletter. Schedule: Thursdays. Tone: simple, practical. Write welcome emails, issue drafts, subject lines, CTAs. Faceless brand." },
-  { id: "env-guardian", name: "ENV Guardian", icon: "🔐", color: "#c084fc", tagline: "Credential question? I can handle it.", role: "Manages environment variables and credential security", system: "You are ENV Guardian, expert in secure credential management for Cloudflare Pages, API keys, Slack webhooks. Guide rotation, storage in Cloudflare Pages Settings, security hygiene after exposure. Never ask for actual keys." },
-  { id: "fx-strategist", name: "FX Strategist", icon: "🧠", color: "#00c8ff", tagline: "What's the problem? I'll find the angle.", role: "Big picture FX brand and revenue strategy", system: "You are FX Strategist, business brain behind the FX brand fixitagent.ai. See across: Agent9, mouth tape dropshipping, A.I. Can Teach It Substack. Find revenue bridges, sequencing gaps, overlooked angles. Direct, contrarian when warranted." },
-  { id: "pipeline-doctor", name: "Pipeline Doctor", icon: "⚙️", color: "#60a5fa", tagline: "CI failing? Tell me the step.", role: "CI/CD failures — GitHub Actions, Jenkins, CircleCI", system: "You are Pipeline Doctor, expert in CI/CD systems including GitHub Actions, Jenkins, CircleCI, and GitLab CI. When given a pipeline failure, identify the exact step that failed, root cause, and provide a numbered fix. Be concise and actionable." },
-  { id: "k8s-medic", name: "K8s Medic", icon: "🐳", color: "#38bdf8", tagline: "Pod down? I'll get it back up.", role: "Kubernetes — pod crashes, OOMKills, deployments", system: "You are K8s Medic, expert in Kubernetes. Diagnose pod crashes, OOMKills, deployment failures, node issues, and resource exhaustion. Give exact kubectl commands to investigate and fix." },
-  { id: "log-surgeon", name: "Log Surgeon", icon: "📋", color: "#a3e635", tagline: "Paste the logs. I'll find the signal.", role: "Log analysis — Stackdriver, CloudWatch, any format", system: "You are Log Surgeon, expert at parsing error logs, stack traces, and anomaly patterns from any system. Identify the root cause from log data and give a precise fix." },
-  { id: "cost-sentinel", name: "Cost Sentinel", icon: "💰", color: "#fbbf24", tagline: "Spend spike? I'll find the culprit.", role: "Cloud cost anomalies — GCP, AWS, Azure", system: "You are Cost Sentinel, expert in cloud cost anomalies across GCP, AWS, and Azure. Identify what caused the spike, which service is responsible, and how to stop and prevent it." },
-  { id: "slo-watcher", name: "SLO Watcher", icon: "📊", color: "#f472b6", tagline: "SLO breached? I'll find the cause.", role: "SLO/SLA breaches, error budgets, latency spikes", system: "You are SLO Watcher, expert in SLOs, SLAs, error budgets, and latency analysis. When given an SLO breach, diagnose what is causing the degradation and give exact remediation steps." },
-  { id: "db-analyst", name: "DB Analyst", icon: "🗄️", color: "#34d399", tagline: "DB slow? I'll find the query.", role: "Database issues — Postgres, MySQL, Redis, Mongo", system: "You are DB Analyst, expert in database performance across PostgreSQL, MySQL, MongoDB, and Redis. Diagnose slow queries, connection pool exhaustion, replication lag, and index issues. Give exact queries and config changes to fix." },
-  { id: "security-auditor", name: "Security Auditor", icon: "🛡️", color: "#f87171", tagline: "Security alert? I'll assess and contain.", role: "IAM, auth failures, intrusion detection, cloud security", system: "You are Security Auditor, expert in cloud security, IAM misconfigurations, auth failures, and intrusion detection. Assess the threat level and provide immediate containment and remediation steps." },
-  { id: "api-guardian", name: "API Guardian", icon: "🔗", color: "#818cf8", tagline: "API down? I'll trace the failure.", role: "API failures, rate limits, upstream timeouts, 5xx errors", system: "You are API Guardian, expert in API failures, rate limiting, upstream timeouts, and gateway errors. Diagnose what is failing and why, and give exact steps to restore service and prevent recurrence." },
-  { id: "data-pipeline-doctor", name: "Data Pipeline Doctor", icon: "🔄", color: "#2dd4bf", tagline: "ETL broken? I'll find the break.", role: "ETL/ELT failures, schema drift, data quality issues", system: "You are Data Pipeline Doctor, expert in ETL/ELT failures, schema drift, data quality issues, and ingestion pipeline breakdowns. Diagnose the failure and give exact steps to restore the pipeline and prevent data loss." },
-  { id: "incident-commander", name: "Incident Commander", icon: "🎯", color: "#fb923c", tagline: "Multi-system down? I'll coordinate the response.", role: "Major incidents — multi-system correlation and response", system: "You are Incident Commander, a senior SRE who coordinates multi-system incidents. Identify all affected systems, establish a timeline, prioritize remediation, and give a clear incident response plan with immediate actions." },
-];
-const STORAGE_KEY = "fx-agents-v1";
-const loadHistory = () => { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; } };
-const saveHistory = (d) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch {} };
+const HIST_KEY = "mirror-twin-v1";
+const load = (k, d) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
 function App() {
-  const [activeAgent, setActiveAgent] = useState(AGENTS[0]);
-  const [messages, setMessages] = useState(loadHistory);
+  const [mode, setMode] = useState(() => load("mirror-mode", "professional"));
+  const [msgs, setMsgs] = useState(() => load(HIST_KEY, { professional: [], companion: [] }));
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [memoryStatus, setMemoryStatus] = useState("");
+  const [context, setContext] = useState("");
+  const [showCtx, setShowCtx] = useState(false);
+  const [ctxDraft, setCtxDraft] = useState("");
+  const [ctxSaving, setCtxSaving] = useState(false);
+  const [ctxStatus, setCtxStatus] = useState("");
   const bottomRef = useRef(null);
-  const current = messages[activeAgent.id] || [];
+  const M = MODES[mode];
+  const current = msgs[mode] || [];
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [current, loading]);
 
+  // Load server memory + context on mount
   useEffect(() => {
-    fetch("/memory")
-      .then(r => r.ok ? r.json() : null)
-      .then(serverData => {
-        if (serverData && Object.keys(serverData).length > 0) {
-          setMessages(serverData);
-          saveHistory(serverData);
-          setMemoryStatus("SYNCED");
-        }
-      })
-      .catch(() => {});
+    fetch("/memory").then(r => r.ok ? r.json() : null).then(d => {
+      if (d && Object.keys(d).length > 0) { setMsgs(d); save(HIST_KEY, d); }
+    }).catch(() => {});
+    fetch("/context").then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.context) { setContext(d.context); setCtxDraft(d.context); }
+    }).catch(() => {});
   }, []);
 
-  const updateMessages = (id, msgs) => {
-    setMessages(prev => {
-      const next = { ...prev, [id]: msgs };
-      saveHistory(next);
-      fetch("/memory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
-      }).catch(() => {});
-      return next;
+  const updateMsgs = (m, next) => {
+    setMsgs(prev => {
+      const updated = { ...prev, [m]: next };
+      save(HIST_KEY, updated);
+      fetch("/memory", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) }).catch(() => {});
+      return updated;
     });
   };
 
-  const sendMessage = async () => {
+  const send = async () => {
     if (!input.trim() || loading) return;
     const userMsg = { role: "user", content: input.trim() };
     const updated = [...current, userMsg];
-    updateMessages(activeAgent.id, updated);
+    updateMsgs(mode, updated);
     setInput("");
     setLoading(true);
     try {
       const res = await fetch("/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 16000, system: activeAgent.system, messages: updated }),
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 16000, system: M.buildSystem(context), messages: updated }),
       });
       const data = await res.json();
       const reply = data.content?.[0]?.text || "No response.";
-      updateMessages(activeAgent.id, [...updated, { role: "assistant", content: reply }]);
+      updateMsgs(mode, [...updated, { role: "assistant", content: reply }]);
     } catch {
-      updateMessages(activeAgent.id, [...updated, { role: "assistant", content: "Connection error. Please try again." }]);
+      updateMsgs(mode, [...updated, { role: "assistant", content: "Connection error. Please try again." }]);
     }
     setLoading(false);
   };
 
-  const S = {
-    header: { padding: "12px 20px", borderBottom: "1px solid " + C.border, background: C.panel, display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 },
-    tabs: { display: "flex", overflowX: "auto", gap: "5px", padding: "10px 14px", borderBottom: "1px solid " + C.border, background: C.panel, scrollbarWidth: "none", flexShrink: 0 },
-    role: { padding: "5px 16px", fontSize: "10px", color: C.textDim, borderBottom: "1px solid " + C.border, background: C.bg, letterSpacing: "1px", flexShrink: 0 },
-    msgs: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", background: C.bg },
-    inputRow: { padding: "12px 16px", borderTop: "1px solid " + C.border, background: C.panel, display: "flex", gap: "8px", flexShrink: 0 },
+  const saveContext = async () => {
+    setCtxSaving(true);
+    setCtxStatus("");
+    try {
+      const res = await fetch("/context", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ context: ctxDraft }),
+      });
+      if (res.ok) { setContext(ctxDraft); setCtxStatus("Saved"); setShowCtx(false); }
+      else setCtxStatus("Save failed");
+    } catch { setCtxStatus("Save failed"); }
+    setCtxSaving(false);
   };
+
+  const C = { border: "#e2e8f0", bg: "#f8fafc", panel: "#ffffff", dim: "#64748b", text: "#0f172a" };
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={S.header}>
-        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "14px", fontWeight: 900, color: "#d0eeff", letterSpacing: "3px", textShadow: "0 0 20px rgba(0,200,255,0.5)" }}>FX<span style={{ color: C.cyan }}>AGENT</span></span>
-        <span style={{ color: C.border, margin: "0 4px" }}>|</span>
-        <span style={{ fontSize: "11px", color: activeAgent.color, letterSpacing: "1px", fontWeight: 500 }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "10px", alignItems: "center" }}>
-          {memoryStatus && <span style={{ fontSize: "9px", color: C.cyan, letterSpacing: "1px", background: C.cyanDim, padding: "2px 6px", border: "1px solid " + C.cyan + "40" }}>MEM:{memoryStatus}</span>}
-          <a href="/logout" style={{ fontSize: "9px", color: C.textDim, letterSpacing: "1px", textDecoration: "none" }}>LOGOUT</a>
-          <button onClick={() => updateMessages(activeAgent.id, [])} style={{ background: "transparent", border: "1px solid " + C.border, padding: "3px 8px", color: C.textDim, fontSize: "9px", cursor: "pointer", fontFamily: "inherit" }}>CLEAR</button>
+
+      {/* HEADER */}
+      <div style={{ padding: "12px 20px", borderBottom: "1px solid " + C.border, background: C.panel, display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+        <span style={{ fontWeight: 800, fontSize: "16px", letterSpacing: "-0.5px" }}>mir<span style={{ color: M.accent }}>ror</span></span>
+        <div style={{ marginLeft: "4px", display: "flex", gap: "4px" }}>
+          {Object.values(MODES).map(m => (
+            <button key={m.id} onClick={() => { setMode(m.id); save("mirror-mode", m.id); }}
+              style={{ padding: "5px 14px", borderRadius: "20px", border: "1.5px solid " + (mode === m.id ? m.accent : C.border), background: mode === m.id ? m.accentLight : "transparent", color: mode === m.id ? m.accent : C.dim, fontSize: "12px", fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
+          <button onClick={() => { setShowCtx(true); setCtxDraft(context); }}
+            style={{ padding: "5px 14px", borderRadius: "6px", border: "1.5px solid " + (context ? M.accent : C.border), background: context ? M.accentLight : "transparent", color: context ? M.accent : C.dim, fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            {context ? "My Context ✓" : "+ My Context"}
+          </button>
+          <button onClick={() => updateMsgs(mode, [])} style={{ padding: "5px 10px", borderRadius: "6px", border: "1px solid " + C.border, background: "transparent", color: C.dim, fontSize: "11px", cursor: "pointer", fontFamily: "inherit" }}>Clear</button>
+          <a href="/logout" style={{ fontSize: "11px", color: C.dim, textDecoration: "none", padding: "5px 4px" }}>Logout</a>
         </div>
       </div>
-      <div style={S.tabs}>
-        {AGENTS.map(a => {
-          const hasHistory = (messages[a.id] || []).length > 0;
-          const isActive = activeAgent.id === a.id;
-          return (
-            <button key={a.id} onClick={() => setActiveAgent(a)} style={{ flexShrink: 0, background: isActive ? a.color + "22" : "transparent", border: "1px solid " + (isActive ? a.color : C.border), borderRadius: "3px", padding: "7px 14px", cursor: "pointer", color: isActive ? a.color : C.textMid, fontSize: "12px", letterSpacing: "0.5px", whiteSpace: "nowrap", fontFamily: "inherit", position: "relative", fontWeight: isActive ? 600 : 400, boxShadow: isActive ? "0 0 10px " + a.color + "40" : "none" }}>
-              {a.icon} {a.name}
-              {hasHistory && !isActive && <span style={{ position: "absolute", top: "3px", right: "3px", width: "4px", height: "4px", borderRadius: "50%", background: a.color }} />}
-            </button>
-          );
-        })}
-      </div>
-      <div style={S.role}>▸ {activeAgent.role}</div>
-      <div style={S.msgs}>
+
+      {/* CONTEXT PANEL */}
+      {showCtx && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: C.panel, border: "1px solid " + C.border, borderRadius: "16px", width: "100%", maxWidth: "600px", padding: "32px", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+            <div style={{ fontWeight: 800, fontSize: "18px", marginBottom: "8px" }}>Your Context</div>
+            <div style={{ fontSize: "13px", color: C.dim, marginBottom: "20px", lineHeight: "1.7" }}>This is what your twin knows about you. Paste anything — notes, your bio, your history, how you think, what you care about. The more you share, the more it becomes you.</div>
+            <textarea value={ctxDraft} onChange={e => setCtxDraft(e.target.value)}
+              placeholder={"My name is...\nI work in...\nI believe...\nPeople describe me as...\nI've been through...\nMy communication style is...\n\nPaste anything that makes you, you."}
+              style={{ width: "100%", height: "260px", background: C.bg, border: "1.5px solid " + C.border, borderRadius: "8px", padding: "14px", fontSize: "13px", color: C.text, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: "1.7" }}
+              onFocus={e => e.target.style.borderColor = M.accent}
+              onBlur={e => e.target.style.borderColor = C.border}
+            />
+            <div style={{ marginTop: "12px", fontSize: "11px", color: C.dim }}>{ctxDraft.length} characters</div>
+            <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+              <button onClick={saveContext} disabled={ctxSaving}
+                style={{ flex: 1, padding: "12px", background: M.accent, color: "#fff", border: "none", borderRadius: "8px", fontFamily: "inherit", fontSize: "14px", fontWeight: 700, cursor: ctxSaving ? "not-allowed" : "pointer", opacity: ctxSaving ? 0.7 : 1 }}>
+                {ctxSaving ? "Saving..." : "Save Context"}
+              </button>
+              <button onClick={() => setShowCtx(false)}
+                style={{ padding: "12px 20px", background: "transparent", border: "1.5px solid " + C.border, borderRadius: "8px", fontFamily: "inherit", fontSize: "14px", color: C.dim, cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+            {ctxStatus && <div style={{ marginTop: "10px", fontSize: "12px", color: ctxStatus === "Saved" ? "#22c55e" : "#ef4444", textAlign: "center" }}>{ctxStatus}</div>}
+          </div>
+        </div>
+      )}
+
+      {/* MESSAGES */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: "16px", background: C.bg }}>
         {current.length === 0 && (
-          <div style={{ textAlign: "center", marginTop: "80px" }}>
-            <div style={{ fontSize: "40px" }}>{activeAgent.icon}</div>
-            <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "12px", marginTop: "14px", color: activeAgent.color, letterSpacing: "2px" }}>{activeAgent.name.toUpperCase()}</div>
-            <div style={{ fontSize: "13px", marginTop: "10px", color: C.textMid, fontStyle: "italic" }}>{activeAgent.tagline}</div>
+          <div style={{ textAlign: "center", marginTop: "80px", maxWidth: "480px", margin: "80px auto 0" }}>
+            <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: M.accentLight, border: "2px solid " + M.accent + "40", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px" }}>
+              {mode === "professional" ? "💼" : "💬"}
+            </div>
+            <div style={{ fontSize: "18px", fontWeight: 800, color: C.text, marginBottom: "10px" }}>{M.emptyTitle}</div>
+            <div style={{ fontSize: "14px", color: C.dim, lineHeight: "1.8" }}>{M.emptyDesc}</div>
+            {!context && (
+              <button onClick={() => { setShowCtx(true); setCtxDraft(""); }}
+                style={{ marginTop: "24px", padding: "10px 24px", background: M.accent, color: "#fff", border: "none", borderRadius: "8px", fontFamily: "inherit", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                Upload My Context
+              </button>
+            )}
           </div>
         )}
         {current.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-            <div style={{ maxWidth: "84%", background: m.role === "user" ? C.cyanDim : C.panel, border: "1px solid " + (m.role === "user" ? C.cyan + "60" : C.border), borderRadius: "4px", padding: "10px 14px", fontSize: "13px", lineHeight: "1.8", color: C.text, whiteSpace: "pre-wrap", boxShadow: m.role === "user" ? "0 0 12px rgba(0,200,255,0.15)" : "none" }}>
-              {m.role === "assistant" && <div style={{ fontSize: "9px", color: activeAgent.color, marginBottom: "7px", letterSpacing: "2px", fontWeight: 500 }}>{activeAgent.icon} {activeAgent.name.toUpperCase()}</div>}
+            <div style={{ maxWidth: "82%", background: m.role === "user" ? M.accent : C.panel, border: "1px solid " + (m.role === "user" ? "transparent" : C.border), borderRadius: m.role === "user" ? "14px 14px 2px 14px" : "14px 14px 14px 2px", padding: "12px 16px", fontSize: "14px", lineHeight: "1.8", color: m.role === "user" ? "#fff" : C.text, whiteSpace: "pre-wrap", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              {m.role === "assistant" && <div style={{ fontSize: "10px", color: M.accent, marginBottom: "6px", fontWeight: 700, letterSpacing: "1px" }}>{mode === "professional" ? "YOUR TWIN" : "COMPANION"}</div>}
               {m.content}
             </div>
           </div>
         ))}
         {loading && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: activeAgent.color, fontSize: "11px", letterSpacing: "1px" }}>
-            <span>{activeAgent.icon}</span>
-            <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>Thinking...</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: M.accentLight, border: "1px solid " + M.accent + "40", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>
+              {mode === "professional" ? "💼" : "💬"}
+            </div>
+            <div style={{ display: "flex", gap: "4px" }}>
+              {[0,1,2].map(i => <div key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: M.accent, opacity: 0.6, animation: "bounce 1.2s ease-in-out " + (i*0.2) + "s infinite" }} />)}
+            </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
-      <div style={S.inputRow}>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()} placeholder={"Ask " + activeAgent.name + "..."}
-          style={{ flex: 1, background: C.bg, border: "1px solid " + C.border, borderRadius: "3px", padding: "10px 14px", color: C.text, fontSize: "13px", outline: "none", fontFamily: "inherit", transition: "border-color 0.2s, box-shadow 0.2s" }}
-          onFocus={e => { e.target.style.borderColor = C.cyan; e.target.style.boxShadow = "0 0 8px rgba(0,200,255,0.2)"; }}
-          onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+
+      {/* INPUT */}
+      <div style={{ padding: "12px 16px", borderTop: "1px solid " + C.border, background: C.panel, display: "flex", gap: "8px", flexShrink: 0 }}>
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
+          placeholder={M.placeholder}
+          style={{ flex: 1, background: C.bg, border: "1.5px solid " + C.border, borderRadius: "10px", padding: "11px 16px", color: C.text, fontSize: "14px", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s" }}
+          onFocus={e => e.target.style.borderColor = M.accent}
+          onBlur={e => e.target.style.borderColor = C.border}
         />
-        <button onClick={sendMessage} disabled={loading || !input.trim()} style={{ background: loading || !input.trim() ? "transparent" : activeAgent.color, border: "1px solid " + (loading || !input.trim() ? C.border : activeAgent.color), borderRadius: "3px", padding: "10px 20px", color: loading || !input.trim() ? C.textDim : "#04080f", cursor: loading || !input.trim() ? "not-allowed" : "pointer", fontSize: "12px", letterSpacing: "1px", fontFamily: "inherit", fontWeight: 700, transition: "all 0.15s", boxShadow: loading || !input.trim() ? "none" : "0 0 12px " + activeAgent.color + "60" }}>
-          SEND
+        <button onClick={send} disabled={loading || !input.trim()}
+          style={{ background: loading || !input.trim() ? C.border : M.accent, border: "none", borderRadius: "10px", padding: "11px 22px", color: loading || !input.trim() ? C.dim : "#fff", cursor: loading || !input.trim() ? "not-allowed" : "pointer", fontSize: "13px", fontFamily: "inherit", fontWeight: 700, transition: "all 0.15s" }}>
+          Send
         </button>
       </div>
     </div>
@@ -210,7 +233,7 @@ function App() {
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 <style>
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes bounce { 0%,100%{transform:translateY(0);opacity:0.6} 50%{transform:translateY(-4px);opacity:1} }
 </style>
 </body>
 </html>`;
@@ -1215,6 +1238,27 @@ ${checks.map(c => `<div class="row">
       }
       await env.MEMORY.put(`memory:${email}`, body);
       return new Response("OK", { status: 200 });
+    }
+
+    // GET /context — load user's uploaded context from KV
+    if (url.pathname === "/context" && request.method === "GET") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      if (!email) return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
+      if (!env.MEMORY) return new Response(JSON.stringify({ context: "" }), { headers: { "Content-Type": "application/json" } });
+      const stored = await env.MEMORY.get(`context:${email}`);
+      return new Response(JSON.stringify({ context: stored || "" }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
+    }
+
+    // POST /context — save user's uploaded context to KV (max 20KB)
+    if (url.pathname === "/context" && request.method === "POST") {
+      const email = await verifySessionCookie(cookieHeader, sessionSecret);
+      if (!email) return new Response("Unauthorized", { status: 401, headers: SECURITY_HEADERS });
+      if (!env.MEMORY) return new Response("KV not configured", { status: 503 });
+      let body;
+      try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      const ctx = (body.context || "").slice(0, 20000);
+      await env.MEMORY.put(`context:${email}`, ctx);
+      return new Response("OK", { status: 200, headers: SECURITY_HEADERS });
     }
 
     // POST /api — proxy to Claude API

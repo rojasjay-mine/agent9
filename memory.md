@@ -97,6 +97,23 @@
   - Nav: frosted white, pricing cards rounded, terminal widget light grey
 - Dev branch: claude/catch-up-ArCur (merged to main, deployed)
 
+## 2026-04-14 — Product Pivot Session
+- PIVOTING: abandoning generic "FX Agents" SaaS → building AI Clone / Digital Twin product
+- New concept: "Upload your world. Your AI answers, responds, and shows up — as you."
+- Core idea: users upload documents, notes, voice samples, anything → AI becomes deeply personalized version of them
+- Two modes:
+  - CLONE (Professional): AI responds as you, handles your communications, represents your expertise
+  - COMPANION (Support/Wellness): on-call support that already knows your whole story, no re-explaining
+- Future roadmap: voice cloning (ElevenLabs) + real-time video avatar (Tavus/HeyGen) → actual FaceTime-like presence
+- DO NOT call it "therapy" — legal liability. Use "on-call support" / "personal AI companion" / "wellness"
+- Pricing direction: ~$99/mo companion, ~$299/mo full twin with professional clone
+- Build plan:
+  1. New landing page (in progress)
+  2. New clone interface replacing 20 tech agents
+  3. Upload endpoint → context stored in KV
+  4. Onboarding flow
+- Dev branch: claude/catch-up-RMIY9
+
 ## Cloudflare env vars status (as of 2026-04-13)
 ALL SET — all 5 secrets confirmed in Cloudflare Worker:
 - ANTHROPIC_API_KEY ✓

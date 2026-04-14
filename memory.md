@@ -97,7 +97,7 @@
   - Nav: frosted white, pricing cards rounded, terminal widget light grey
 - Dev branch: claude/catch-up-ArCur (merged to main, deployed)
 
-## 2026-04-14 — Product Pivot Session
+## 2026-04-14 — Product Pivot + Launch Session
 - PIVOTING: abandoning generic "FX Agents" SaaS → building AI Clone / Digital Twin product
 - New concept: "Upload your world. Your AI answers, responds, and shows up — as you."
 - Core idea: users upload documents, notes, voice samples, anything → AI becomes deeply personalized version of them
@@ -112,7 +112,21 @@
   2. New clone interface replacing 20 tech agents
   3. Upload endpoint → context stored in KV
   4. Onboarding flow
-- Dev branch: claude/catch-up-RMIY9
+- Brand name: AI U ("AI You") — your working representative
+- Key copy lines:
+  - Headline: "Work a burden? Not anymore."
+  - Eyebrow: "Meet your working representative"
+  - Subhead: "Share your world with AI U. It listens, learns, and shows up for you."
+  - Companion mode title: "You Welcome Yourself"
+  - Bottom CTA: "Your sharper, harder-working self."
+  - CTA button: "Meet yourself →"
+- Tone direction: enlightened, warm, comforting — words that feel good
+- New Stripe prices created:
+  - Companion $99/mo: price_1TM6FgGVEPbuDOhc3odvIism
+  - Twin $299/mo: price_1TM6FiGVEPbuDOhcKBUl9JDH
+- All deployed to main — live at fixitagent.ai
+- Next: ElevenLabs voice cloning, first user outreach
+- Dev branch: claude/catch-up-RMIY9 (merged to main)
 
 ## Cloudflare env vars status (as of 2026-04-13)
 ALL SET — all 5 secrets confirmed in Cloudflare Worker:

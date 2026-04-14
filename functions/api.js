@@ -239,12 +239,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </html>`;
 
 const PRICES = {
-  "solo-monthly":    "price_1TJXeDGVEPbuDOhc59XQkMii",
-  "solo-annual":     "price_1TJXeHGVEPbuDOhcHI7UNbXg",
-  "starter-monthly": "price_1TIJEiGVEPbuDOhcpbg0sLcH",
-  "starter-annual":  "price_1TIx1lGVEPbuDOhcbDPb0lj9",
-  "pro-monthly":     "price_1TIx1lGVEPbuDOhcFhdIyEQO",
-  "pro-annual":      "price_1TIx1mGVEPbuDOhc9cjxLnec",
+  "companion-monthly": "price_1TM6FgGVEPbuDOhc3odvIism",
+  "twin-monthly":      "price_1TM6FiGVEPbuDOhcKBUl9JDH",
 };
 
 // ── Login page HTML ───────────────────────────────────────────────────────────

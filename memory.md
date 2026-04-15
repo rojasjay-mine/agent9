@@ -128,6 +128,35 @@
 - Next: ElevenLabs voice cloning, first user outreach
 - Dev branch: claude/catch-up-RMIY9 (merged to main)
 
+## 2026-04-15 — Landing Page Rewrite + Architecture Plan
+
+### Product evolution (this session)
+- Product is now a platform, not two fixed modes
+- Users build their AI U from a menu: Worker, Mentor, Confidant (live) + Voice, Phone, Face (coming soon)
+- Free tier: try every feature (capped), no card needed
+- Pricing: Your AI $99/mo, Full AI U $299/mo (same Stripe price IDs)
+- Consultant angle: Jay's experience across all areas of life = the Mentor is genuinely him, scalable
+
+### Landing page changes (merged to main)
+- Hero: new eyebrow, H1, subhead, 6-item feature menu, updated CTA + trial note
+- How it works: Share → Request → Activate (replaced Absorb/Present)
+- Modes section: Worker/Mentor/Confidant (3 live cards) + Voice/Phone/Face (3 muted coming soon)
+- Roadmap, pricing, bottom CTA all updated to match new framing
+- Fixed /agents white page: added 'unsafe-eval' to CSP (Babel requires it)
+
+### Next session — full platform rebuild
+Build ALL of this, not just the UI:
+1. **Vectorize** — embed user context, semantic retrieval per conversation (not raw KV text dump)
+2. **AI Gateway** — all Claude calls go through it: caching, cost tracking, fallback models
+3. **Workers AI** — free tier gets Llama (CF free), paid gets Claude. Built-in upsell.
+4. **Durable Objects** — each user's AI U is stateful, persistent WebSocket, always on
+5. **R2** — file uploads (PDFs, docs, voice memos) stored in R2, processed into Vectorize
+6. **Rebuild /agents UI** — Worker/Mentor/Confidant selector, context upload, new chat UI
+7. **Fix login page** — still shows "FXAGENT" Tron theme, needs AI U rebrand
+
+### Dev branch
+claude/catch-up-DRr3S — merged to main, all deployed
+
 ## Cloudflare env vars status (as of 2026-04-13)
 ALL SET — all 5 secrets confirmed in Cloudflare Worker:
 - ANTHROPIC_API_KEY ✓

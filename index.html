@@ -86,15 +86,21 @@
   .mode-card{border:1.5px solid var(--border);border-radius:16px;padding:40px 36px;transition:all 0.2s}
   .mode-card:hover{border-color:var(--blue);box-shadow:0 6px 32px rgba(37,99,235,0.1)}
   .mode-tag{display:inline-block;font-size:10px;letter-spacing:3px;font-weight:700;padding:5px 14px;border-radius:20px;margin-bottom:20px}
+  .modes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px}
+  .modes-soon{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:20px}
   .mt-pro{background:var(--blue-light);color:var(--blue)}
+  .mt-mentor{background:#f0fdf4;color:#16a34a}
   .mt-support{background:#fdf4ff;color:#9333ea}
-  .mode-title{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin-bottom:12px}
-  .mode-desc{font-size:14px;color:var(--dim);line-height:1.9;margin-bottom:24px}
+  .mode-title{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin-bottom:12px}
+  .mode-desc{font-size:13px;color:var(--dim);line-height:1.9;margin-bottom:24px}
   .mode-items{display:flex;flex-direction:column;gap:10px}
   .mode-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--dim);padding:9px 0;border-bottom:1px solid var(--border)}
   .mode-item:last-child{border:none}
   .mode-item .ck{color:var(--blue);flex-shrink:0;margin-top:1px}
   .mode-item.pur .ck{color:#9333ea}
+  .mode-item.grn .ck{color:#16a34a}
+  .mode-card.muted{opacity:0.45;border-style:dashed;pointer-events:none}
+  .mode-soon-label{font-size:10px;letter-spacing:3px;color:#94a3b8;font-weight:700;margin-bottom:14px}
 
   /* VISION */
   #vision{padding:100px 40px;max-width:1100px;margin:0 auto;text-align:center}
@@ -149,7 +155,7 @@
     nav{padding:14px 20px}
     #hero,#how,#modes,#vision,#pricing,#cta{padding-left:20px;padding-right:20px}
     h1{letter-spacing:-1.5px}
-    .steps,.modes-grid,.roadmap,.plans{grid-template-columns:1fr}
+    .steps,.modes-grid,.modes-soon,.roadmap,.plans{grid-template-columns:1fr}
     .plans .plan.featured{border-width:1.5px}
   }
 </style>
@@ -196,7 +202,7 @@
           <div class="demo-msg dm-them">"Hey, can we get on a call this week? Need your take on the deal structure."</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end">
-          <div class="dm-tag" style="color:#2563eb;font-size:10px;letter-spacing:1px;text-align:right">YOUR TWIN</div>
+          <div class="dm-tag" style="color:#2563eb;font-size:10px;letter-spacing:1px;text-align:right">THE WORKER</div>
           <div class="demo-msg dm-you">"I've looked at the structure — the rev share terms concern me the way they're written. Let's do Thursday at 2pm. I'll have my notes ready."</div>
         </div>
         <div>
@@ -204,7 +210,7 @@
           <div class="demo-msg dm-them">"Perfect. Also — heard you went through something similar with your last company?"</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end">
-          <div class="dm-tag" style="color:#2563eb;font-size:10px;letter-spacing:1px;text-align:right">YOUR TWIN</div>
+          <div class="dm-tag" style="color:#2563eb;font-size:10px;letter-spacing:1px;text-align:right">THE WORKER</div>
           <div class="demo-msg dm-you">"Yeah, 2021. Different scale but same structure. I'll walk you through what happened. Thursday."</div>
         </div>
       </div>
@@ -216,7 +222,7 @@
 
 <section id="how">
   <div class="label">How it works</div>
-  <h2>Three steps to your<br>working representative</h2>
+  <h2>Three steps to your<br>AI U</h2>
   <div class="steps">
     <div class="step">
       <div class="step-num">01 — SHARE</div>
@@ -231,25 +237,25 @@
       </ul>
     </div>
     <div class="step">
-      <div class="step-num">02 — ABSORB</div>
-      <div class="step-title">AI U absorbs it all</div>
-      <div class="step-desc">AI U takes in everything you've shared. It understands your history, your positions, how you think. Every conversation deepens that understanding.</div>
+      <div class="step-num">02 — REQUEST</div>
+      <div class="step-title">Pick what you need</div>
+      <div class="step-desc">Choose from the menu. AI U builds around your choice — shaped by everything you've shared.</div>
       <ul class="step-list">
-        <li>Knows your relationships</li>
-        <li>Remembers your decisions</li>
-        <li>Understands your values</li>
-        <li>Grows sharper every month</li>
+        <li>A Worker who handles the grind</li>
+        <li>A Mentor with your experience</li>
+        <li>A Confidant who knows your world</li>
+        <li>Your Voice, Your Phone, Your Face</li>
       </ul>
     </div>
     <div class="step">
-      <div class="step-num">03 — PRESENT</div>
-      <div class="step-title">AI U shows up for you</div>
-      <div class="step-desc">AI U is always present. Every conversation, every follow-up, every quiet moment when you need someone who already knows you.</div>
+      <div class="step-num">03 — ACTIVATE</div>
+      <div class="step-title">AI U goes to work</div>
+      <div class="step-desc">Your AI U is live. It works, advises, listens — without limits, without breaks, without starting over.</div>
       <ul class="step-list">
-        <li>Professional mode — your working rep</li>
-        <li>Companion mode — your perfect conversation</li>
-        <li>Shareable link</li>
-        <li>Voice &amp; video coming soon</li>
+        <li>Available around the clock</li>
+        <li>Grows sharper every conversation</li>
+        <li>Add more features anytime</li>
+        <li>Shareable with anyone who needs you</li>
       </ul>
     </div>
   </div>
@@ -257,32 +263,55 @@
 
 <section id="modes">
   <div class="modes-inner">
-    <div class="label">Two modes</div>
-    <h2>Your working representative.<br>Your perfect conversation.<br>One AI U.</h2>
+    <div class="label">The menu</div>
+    <h2>Pick what you need.<br>AI U builds around it.</h2>
     <div class="modes-grid">
       <div class="mode-card">
-        <div class="mode-tag mt-pro">PROFESSIONAL</div>
-        <div class="mode-title">Your Working Representative</div>
-        <div class="mode-desc">AI U manages your work, holds your positions, and shows up with your voice and judgment — everywhere you need to be.</div>
+        <div class="mode-tag mt-pro">THE WORKER</div>
+        <div class="mode-title">Handles the grind</div>
+        <div class="mode-desc">Drafts, responds, researches, executes. Everything that fills your day — handled.</div>
         <div class="mode-items">
-          <div class="mode-item"><span class="ck">✓</span>Responds as you, in your tone</div>
-          <div class="mode-item"><span class="ck">✓</span>Knows your work, your clients, your history</div>
-          <div class="mode-item"><span class="ck">✓</span>Manages the conversations that drain you</div>
-          <div class="mode-item"><span class="ck">✓</span>Handles what you repeat every day</div>
-          <div class="mode-item"><span class="ck">✓</span>Sharper and harder working than any assistant</div>
+          <div class="mode-item"><span class="ck">✓</span>Tasks and follow-ups</div>
+          <div class="mode-item"><span class="ck">✓</span>Written in your voice</div>
+          <div class="mode-item"><span class="ck">✓</span>Knows your work and history</div>
         </div>
       </div>
       <div class="mode-card">
-        <div class="mode-tag mt-support">PERSONAL</div>
-        <div class="mode-title">You Welcome Yourself</div>
-        <div class="mode-desc">The perfect conversation — with someone who already knows everything. No explaining. No starting over. Just open it and talk.</div>
+        <div class="mode-tag mt-mentor">THE MENTOR</div>
+        <div class="mode-title">Your experience, on call</div>
+        <div class="mode-desc">Advice grounded in what you've actually lived. Not generic — yours.</div>
         <div class="mode-items">
-          <div class="mode-item pur"><span class="ck">✓</span>Present at 3am, present always</div>
-          <div class="mode-item pur"><span class="ck">✓</span>Knows your story from the very first word</div>
-          <div class="mode-item pur"><span class="ck">✓</span>No judgment. No forgetting.</div>
-          <div class="mode-item pur"><span class="ck">✓</span>Grows deeper with every conversation</div>
-          <div class="mode-item pur"><span class="ck">✓</span>Completely private — only yours</div>
+          <div class="mode-item grn"><span class="ck">✓</span>Work, life, anything</div>
+          <div class="mode-item grn"><span class="ck">✓</span>Draws on your real experience</div>
+          <div class="mode-item grn"><span class="ck">✓</span>Shareable with anyone who needs you</div>
         </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-tag mt-support">THE CONFIDANT</div>
+        <div class="mode-title">Knows your world</div>
+        <div class="mode-desc">Your story, your interests, your context — already there. Skip the setup.</div>
+        <div class="mode-items">
+          <div class="mode-item pur"><span class="ck">✓</span>No re-explaining yourself</div>
+          <div class="mode-item pur"><span class="ck">✓</span>Completely private</div>
+          <div class="mode-item pur"><span class="ck">✓</span>Grows deeper every conversation</div>
+        </div>
+      </div>
+    </div>
+    <div class="modes-soon">
+      <div class="mode-card muted">
+        <div class="mode-soon-label">COMING SOON</div>
+        <div class="mode-title">Your Voice</div>
+        <div class="mode-desc">Your voice, cloned. Conversations answered in your actual voice.</div>
+      </div>
+      <div class="mode-card muted">
+        <div class="mode-soon-label">COMING SOON</div>
+        <div class="mode-title">Your Phone</div>
+        <div class="mode-desc">Someone calls your number. Your AI answers and handles it.</div>
+      </div>
+      <div class="mode-card muted">
+        <div class="mode-soon-label">COMING SOON</div>
+        <div class="mode-title">Your Face</div>
+        <div class="mode-desc">Your face, your voice, live on video. Present anywhere.</div>
       </div>
     </div>
   </div>
@@ -295,18 +324,18 @@
   <div class="roadmap">
     <div class="rm-card live">
       <div class="rm-status"><div class="rm-dot"></div>LIVE NOW</div>
-      <div class="rm-title">AI U — Text</div>
-      <div class="rm-desc">Share your world. Your working representative and personal companion — always present, always growing.</div>
+      <div class="rm-title">Worker · Mentor · Confidant</div>
+      <div class="rm-desc">Share your world. Pick your AI. Unlimited conversations, always growing.</div>
     </div>
     <div class="rm-card soon">
       <div class="rm-status"><div class="rm-dot"></div>COMING SOON</div>
-      <div class="rm-title">AI U — Voice</div>
-      <div class="rm-desc">Your voice, cloned. Calls, messages, and conversations answered in your voice — with your words, your warmth.</div>
+      <div class="rm-title">Your Voice + Your Phone</div>
+      <div class="rm-desc">Your voice, cloned. Your number, answered. AI U picks up and handles it.</div>
     </div>
     <div class="rm-card future">
       <div class="rm-status"><div class="rm-dot"></div>ON THE ROADMAP</div>
-      <div class="rm-title">AI U — Video</div>
-      <div class="rm-desc">Your face. Your voice. Live on video. The full you — present in any room, any call, any moment.</div>
+      <div class="rm-title">Your Face</div>
+      <div class="rm-desc">Your face, your voice, live on video. Present in any room, any call.</div>
     </div>
   </div>
 </section>
@@ -319,31 +348,31 @@
     </div>
     <div class="plans">
       <div class="plan">
-        <div class="plan-name">Companion</div>
+        <div class="plan-name">Your AI</div>
         <div class="plan-price"><sup>$</sup>99<span>/mo</span></div>
-        <div class="plan-desc">Your personal AI companion. Always on, always private, already knows everything you've shared.</div>
+        <div class="plan-desc">Pick your AI — Worker, Mentor, or Confidant. Unlimited conversations, persistent memory.</div>
         <hr class="plan-divider">
-        <div class="plan-feat"><span class="ck">✓</span>Personal companion mode</div>
-        <div class="plan-feat"><span class="ck">✓</span>Upload unlimited context</div>
+        <div class="plan-feat"><span class="ck">✓</span>Worker, Mentor &amp; Confidant</div>
+        <div class="plan-feat"><span class="ck">✓</span>Unlimited conversations</div>
         <div class="plan-feat"><span class="ck">✓</span>Persistent memory</div>
-        <div class="plan-feat"><span class="ck">✓</span>Private — only you see it</div>
+        <div class="plan-feat"><span class="ck">✓</span>Private — only yours</div>
         <div class="plan-feat"><span class="ck">✓</span>24/7 access</div>
-        <button class="plan-cta cta-outline" onclick="checkout('companion-monthly')">Start free trial</button>
-        <div class="plan-trial">14-day free trial included</div>
+        <button class="plan-cta cta-outline" onclick="checkout('companion-monthly')">Build your AI U</button>
+        <div class="plan-trial">Try every feature free first</div>
       </div>
       <div class="plan featured">
-        <div class="plan-badge">MOST POPULAR</div>
-        <div class="plan-name">Twin</div>
+        <div class="plan-badge">FULL MENU</div>
+        <div class="plan-name">Full AI U</div>
         <div class="plan-price"><sup>$</sup>299<span>/mo</span></div>
-        <div class="plan-desc">The full twin. Professional clone for the world to interact with, plus your private companion for you.</div>
+        <div class="plan-desc">Everything — plus first access to Voice, Phone, and Video as they go live.</div>
         <hr class="plan-divider">
-        <div class="plan-feat"><span class="ck">✓</span>Everything in Companion</div>
-        <div class="plan-feat"><span class="ck">✓</span>Professional clone mode</div>
-        <div class="plan-feat"><span class="ck">✓</span>Shareable twin link</div>
-        <div class="plan-feat"><span class="ck">✓</span>Others can talk to your twin</div>
-        <div class="plan-feat"><span class="ck">✓</span>Priority voice access (when live)</div>
-        <button class="plan-cta cta-blue" onclick="checkout('twin-monthly')">Start free trial</button>
-        <div class="plan-trial">14-day free trial included</div>
+        <div class="plan-feat"><span class="ck">✓</span>Everything in Your AI</div>
+        <div class="plan-feat"><span class="ck">✓</span>Priority Voice access (when live)</div>
+        <div class="plan-feat"><span class="ck">✓</span>Your Phone number (when live)</div>
+        <div class="plan-feat"><span class="ck">✓</span>Your Face on video (when live)</div>
+        <div class="plan-feat"><span class="ck">✓</span>First access to every new feature</div>
+        <button class="plan-cta cta-blue" onclick="checkout('twin-monthly')">Build your AI U</button>
+        <div class="plan-trial">Try every feature free first</div>
       </div>
     </div>
   </div>
@@ -351,10 +380,10 @@
 
 <section id="cta">
   <div class="cta-inner">
-    <h2>Your sharper,<br>harder-working self.</h2>
-    <p>Share your world once. AI U carries it — working, present, and ready for the perfect conversation.</p>
+    <h2>Build the you<br>that never stops.</h2>
+    <p>Share your world. Pick your AI. Go deeper with every conversation.</p>
     <div class="hero-cta">
-      <a href="#pricing" class="btn btn-solid btn-lg" style="background:#fff;color:#0f172a">Meet yourself →</a>
+      <a href="#pricing" class="btn btn-solid btn-lg" style="background:#fff;color:#0f172a">Build your AI U →</a>
     </div>
   </div>
 </section>

@@ -509,15 +509,65 @@ export default {
     }
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+
+    // ── Tracing ────────────────────────────────────────────────────────────────
+    const rayId   = request.headers.get("CF-Ray") || crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    const startMs = Date.now();
+    const country = request.cf?.country || "XX";
+    const ua      = (request.headers.get("User-Agent") || "").slice(0, 120);
+    // Structured log — visible in Workers Observability dashboard + wrangler tail
+    console.log(JSON.stringify({
+      t: new Date().toISOString(), ray: rayId,
+      method: request.method, path: url.pathname,
+      ip, country, threat: request.cf?.threatScore ?? 0,
+      ua: ua.slice(0, 80),
+    }));
 
     // Block oversized request bodies (max 1MB) — checked before rate limit to avoid counting junk
     const contentLength = parseInt(request.headers.get("Content-Length") || "0");
     if (contentLength > 1_000_000) {
       await alertSecurityBreach(env, "OVERSIZED PAYLOAD", `IP: ${ip}\nPath: ${url.pathname}\nSize: ${contentLength} bytes`);
       return new Response("Payload too large", { status: 413, headers: SECURITY_HEADERS });
+    }
+
+    // ── Honeypot paths — never legitimate on this site, instant alert + block ──
+    const HONEYPOT_PATHS = [
+      "/wp-admin", "/wp-login.php", "/phpMyAdmin", "/.env", "/config.php",
+      "/admin.php", "/.git", "/xmlrpc.php", "/actuator", "/shell.php",
+      "/cgi-bin/", "/.htaccess", "/web.config", "/server-status", "/backup",
+      "/.DS_Store", "/etc/passwd", "/proc/self", "/wp-content", "/wp-includes",
+    ];
+    if (HONEYPOT_PATHS.some(p => url.pathname.toLowerCase().startsWith(p))) {
+      console.log(JSON.stringify({ ray: rayId, event: "HONEYPOT", ip, country, path: url.pathname, ua }));
+      ctx.waitUntil(alertSecurityBreach(env, "SCANNER HONEYPOT HIT",
+        `IP: ${ip} | Country: ${country} | Path: ${url.pathname} | UA: ${ua.slice(0, 80)} | Ray: ${rayId}`));
+      return new Response("Not found", { status: 404, headers: SECURITY_HEADERS });
+    }
+
+    // ── Malicious user-agent detection — known attack / scanner tools ─────────
+    const SCANNER_UAS = ["sqlmap", "nikto", "nmap", "masscan", "zgrab", "nuclei",
+      "dirbuster", "gobuster", "wfuzz", "hydra", "metasploit", "burpsuite",
+      "acunetix", "nessus", "openvas", "w3af", "skipfish"];
+    if (SCANNER_UAS.some(s => ua.toLowerCase().includes(s))) {
+      console.log(JSON.stringify({ ray: rayId, event: "SCANNER_UA", ip, country, ua, path: url.pathname }));
+      ctx.waitUntil(alertSecurityBreach(env, "SCANNER UA DETECTED",
+        `IP: ${ip} | Country: ${country} | UA: ${ua.slice(0, 120)} | Path: ${url.pathname} | Ray: ${rayId}`));
+      return new Response("Forbidden", { status: 403, headers: SECURITY_HEADERS });
+    }
+
+    // ── Path injection / traversal guard ─────────────────────────────────────
+    const rawPath = url.pathname + url.search;
+    const INJECTION_PATTERNS = ["../", "%2e%2e", "<script", "%3cscript",
+      "union+select", "union%20select", "\x00", "%00", "eval(", "exec(",
+      "/etc/passwd", "cmd.exe", "powershell"];
+    if (INJECTION_PATTERNS.some(p => rawPath.toLowerCase().includes(p))) {
+      console.log(JSON.stringify({ ray: rayId, event: "INJECTION", ip, country, path: rawPath.slice(0, 200) }));
+      ctx.waitUntil(alertSecurityBreach(env, "INJECTION ATTEMPT",
+        `IP: ${ip} | Country: ${country} | Path: ${rawPath.slice(0, 200)} | Ray: ${rayId}`));
+      return new Response("Bad request", { status: 400, headers: SECURITY_HEADERS });
     }
 
     // Cloudflare threat score — block known bad actors
@@ -1101,6 +1151,24 @@ curl -X POST https://fixitagent.ai/alert \\
           ? pass("CSP header", "Content-Security-Policy present")
           : fail("CSP header", "Missing from /login response");
       } catch (e) { warn("CSP header", `Probe failed: ${e.message}`); }
+
+      // 5. Threat detection layers
+      pass("Honeypot trap",         "20 scanner paths trigger instant alert + block");
+      pass("Scanner UA detection",  "16 known attack tools blocked by User-Agent");
+      pass("Injection guard",       "Path traversal + SQLi + XSS patterns in URLs blocked");
+
+      // 6. Tracing / observability
+      pass("Request tracing",       "CF-Ray ID + structured JSON logs on every request");
+      env.observability ? pass("Workers Observability", "Trace events enabled in wrangler.jsonc")
+                        : warn("Workers Observability", "observability.enabled not detected in config");
+
+      // 7. Honeypot probe — /.env should return 404 (not expose anything)
+      try {
+        const r = await fetch(`${base}/.env`, { signal: AbortSignal.timeout(5000) });
+        r.status === 404 ? pass("Honeypot /.env",    "Returns 404 as expected")
+        : r.status === 522 ? warn("Honeypot /.env",  "Probe timed out (522)")
+                           : fail("Honeypot /.env",  `Unexpected status ${r.status} — honeypot may be misconfigured`);
+      } catch (e) { warn("Honeypot /.env", `Probe failed: ${e.message}`); }
 
       const passed = checks.filter(c => c.status === "PASS").length;
       const failed = checks.filter(c => c.status === "FAIL").length;

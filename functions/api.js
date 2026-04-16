@@ -582,6 +582,30 @@ export default {
     const url = new URL(request.url);
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
+    // Handle Slack URL verification before any middleware
+    if (url.pathname === "/slack/events" && request.method === "POST") {
+      const rawBody = await request.text();
+      let payload;
+      try { payload = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      if (payload.type === "url_verification") {
+        return new Response(JSON.stringify({ challenge: payload.challenge }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503 });
+      const tsHeader = request.headers.get("X-Slack-Request-Timestamp") || "";
+      const slackSig = request.headers.get("X-Slack-Signature") || "";
+      if (Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
+        return new Response("Stale request", { status: 403 });
+      }
+      const valid = await verifyHmac(`v0:${tsHeader}:${rawBody}`, env.SLACK_SIGNING_SECRET, slackSig.replace("v0=", ""));
+      if (!valid) return new Response("Invalid signature", { status: 403 });
+      if (payload.type === "event_callback") {
+        ctx.waitUntil(handleSlackEvent(payload.event, env));
+      }
+      return new Response("ok");
+    }
+
     // ── Tracing ────────────────────────────────────────────────────────────────
     const rayId   = request.headers.get("CF-Ray") || crypto.randomUUID().replace(/-/g, "").slice(0, 16);
     const startMs = Date.now();

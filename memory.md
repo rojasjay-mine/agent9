@@ -192,11 +192,41 @@ claude/catch-up-uNQh8 — merged to main, deployed
 - Security-eval score fixed: WARNs excluded from denominator (522 CF self-probe timeouts are infrastructure, not failures)
 - Score: 100% ✓
 
-## Cloudflare env vars status (as of 2026-04-13)
-ALL SET — all 5 secrets confirmed in Cloudflare Worker:
+## 2026-04-16 — Slack Bot Session
+
+### What was built
+- Added Slack bot integration to api.js: `POST /slack/events`
+- `handleSlackEvent()` helper: Professional mode for @mentions, Companion for DMs
+- Uses owner context from KV (`context:{email}`), persists per-thread history (`slack-hist:{key}`, last 20 msgs)
+- `ctx.waitUntil()` so Slack gets 200 in <3s while Claude runs async
+- URL verification handled before middleware/HMAC (required to get Slack to verify the endpoint)
+- `/slack/events` exempt from rate limiting
+- SLACK_BOT_TOKEN + SLACK_SIGNING_SECRET added to security-eval checks
+- Deployed to main (via fix-main-push branch due to git history divergence)
+
+### Slack app setup (done)
+- App created, installed to FX workspace
+- Bot token (xoxb-...) added as SLACK_BOT_TOKEN in Cloudflare secrets
+- Signing secret added as SLACK_SIGNING_SECRET in Cloudflare secrets
+- Event Subscriptions URL verified: https://fixitagent.ai/slack/events ✓
+- Bot events subscribed: app_mention, message.im
+
+### Still needed to make DMs work
+- In Slack app settings → App Home → enable "Allow users to send Slash commands and messages from the Messages tab"
+- Without this, DMs to the bot don't trigger message.im events
+
+### New copy drafted for site redesign (not built yet)
+- Full 7-section copy written and shared — user reviewing before build
+- Brand: "Where have you been all my life." / editorial dark theme / DM Serif Display
+- Sections: Hero (live chat), What it is, 3 modes with exchanges, How it learns, Pricing, Testimonial, Footer CTA
+
+## Cloudflare env vars status (as of 2026-04-16)
+ALL SET — 7 secrets in Cloudflare Worker:
 - ANTHROPIC_API_KEY ✓
 - STRIPE_SECRET_KEY ✓
 - STRIPE_WEBHOOK_SECRET ✓
 - SESSION_SECRET ✓
 - SLACK_WEBHOOK_URL ✓
+- SLACK_BOT_TOKEN ✓
+- SLACK_SIGNING_SECRET ✓
 Run fixitagent.ai/admin/security-eval to verify all green.

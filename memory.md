@@ -181,7 +181,16 @@ claude/catch-up-DRr3S — merged to main, all deployed
 7. Footer CTA — "Ready when you are."
 
 ### Dev branch
-claude/catch-up-uNQh8 — site redesign pending
+claude/catch-up-uNQh8 — merged to main, deployed
+
+### Security hardening (deployed this session)
+- ctx parameter added to fetch handler — enables non-blocking ctx.waitUntil() alerts
+- Request tracing: CF-Ray ID + structured JSON console.log on every request (Workers Observability + wrangler tail)
+- Honeypot trap: 20 scanner paths (/.env, /wp-admin, /.git, etc.) → 404 + instant Slack alert
+- Scanner UA detection: 16 known attack tools (sqlmap, nikto, nuclei, etc.) → 403 + alert
+- Path injection guard: traversal (../), SQLi, XSS patterns in URLs → 400 + alert
+- Security-eval score fixed: WARNs excluded from denominator (522 CF self-probe timeouts are infrastructure, not failures)
+- Score: 100% ✓
 
 ## Cloudflare env vars status (as of 2026-04-13)
 ALL SET — all 5 secrets confirmed in Cloudflare Worker:

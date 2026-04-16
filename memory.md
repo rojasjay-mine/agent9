@@ -157,6 +157,32 @@ Build ALL of this, not just the UI:
 ### Dev branch
 claude/catch-up-DRr3S — merged to main, all deployed
 
+## 2026-04-16 — Brand & Site Direction Session
+
+### What we locked
+- **Tagline:** "Where have you been all my life." — casual, warm, makes it feel like a person not a tool
+- **Target user:** Someone who already believes in AI (uses ChatGPT casually) but has never had one that actually knows *them*. Working parent, ambitious professional, or both. Not distressed — just ready for more.
+- **Positioning gap:** ChatGPT/Claude = generic. Replika = weird. Nobody owns "personal AI that actually knows you and gets things done." That's AI U.
+- **Real competition:** The person who just uses ChatGPT and never personalizes it. Already sold on AI, just needs to see it done right.
+
+### Site redesign direction (full rebuild next)
+- **Visual:** Editorial dark — warm charcoal (#1a1a1a), off-white (#faf8f5) text, warm accent (TBD). HD background image TBD at build time — user will know it when they see it.
+- **Typography:** DM Serif Display for headlines, DM Sans for body. Warm, editorial, not another Inter/Grotesk AI page.
+- **No drama, no stress:** Show moments not problems. Light, almost breezy copy. Product being useful, not solving a crisis.
+- **Live demo up top:** Hero has a real chat — first message already loaded: "Hey. What can I take off your plate today?" They type or scroll.
+
+### Page structure (7 sections, no repeats)
+1. Hero — full screen, big headline, live chat
+2. What it is — one tight honest paragraph, no bullets
+3. Three modes — Worker / Mentor / Confidant, one real exchange each
+4. How it learns you — one visual (upload → intelligence)
+5. Pricing — two options, clean and direct
+6. One testimonial — specific, real, sounds like the reader
+7. Footer CTA — "Ready when you are."
+
+### Dev branch
+claude/catch-up-uNQh8 — site redesign pending
+
 ## Cloudflare env vars status (as of 2026-04-13)
 ALL SET — all 5 secrets confirmed in Cloudflare Worker:
 - ANTHROPIC_API_KEY ✓

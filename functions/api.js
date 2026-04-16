@@ -669,22 +669,24 @@ export default {
 
     // POST /slack/events — Slack bot (app_mention + DMs → Claude → reply in Slack)
     if (url.pathname === "/slack/events" && request.method === "POST") {
-      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503 });
-      const tsHeader = request.headers.get("X-Slack-Request-Timestamp") || "";
-      const slackSig = request.headers.get("X-Slack-Signature") || "";
       const rawBody = await request.text();
-      if (Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
-        return new Response("Stale request", { status: 403, headers: SECURITY_HEADERS });
-      }
-      const valid = await verifyHmac(`v0:${tsHeader}:${rawBody}`, env.SLACK_SIGNING_SECRET, slackSig.replace("v0=", ""));
-      if (!valid) return new Response("Invalid signature", { status: 403, headers: SECURITY_HEADERS });
       let payload;
       try { payload = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      // Handle URL verification before HMAC (one-time setup ping from Slack)
       if (payload.type === "url_verification") {
         return new Response(JSON.stringify({ challenge: payload.challenge }), {
           headers: { "Content-Type": "application/json" }
         });
       }
+      // Verify signature for all real events
+      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503 });
+      const tsHeader = request.headers.get("X-Slack-Request-Timestamp") || "";
+      const slackSig = request.headers.get("X-Slack-Signature") || "";
+      if (Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
+        return new Response("Stale request", { status: 403, headers: SECURITY_HEADERS });
+      }
+      const valid = await verifyHmac(`v0:${tsHeader}:${rawBody}`, env.SLACK_SIGNING_SECRET, slackSig.replace("v0=", ""));
+      if (!valid) return new Response("Invalid signature", { status: 403, headers: SECURITY_HEADERS });
       if (payload.type === "event_callback") {
         ctx.waitUntil(handleSlackEvent(payload.event, env));
       }

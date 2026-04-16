@@ -475,6 +475,75 @@ async function alertSecurityBreach(env, type, details) {
   }).catch(() => {});
 }
 
+async function handleSlackEvent(event, env) {
+  if (event.bot_id || event.subtype === "bot_message") return;
+  const isDM = event.channel_type === "im";
+  const isMention = event.type === "app_mention";
+  if (!isDM && !isMention) return;
+
+  const text = (event.text || "").replace(/<@[A-Z0-9]+>/g, "").trim();
+  if (!text) return;
+
+  const mode = isDM ? "companion" : "professional";
+  const ownerEmail = (env.OWNER_EMAIL || "").toLowerCase();
+  let context = "";
+  if (ownerEmail && env.MEMORY) {
+    context = (await env.MEMORY.get(`context:${ownerEmail}`)) || "";
+  }
+
+  const threadKey = event.thread_ts ? `${event.channel}:${event.thread_ts}` : event.channel;
+  let history = [];
+  if (env.MEMORY) {
+    const raw = await env.MEMORY.get(`slack-hist:${threadKey}`);
+    if (raw) try { history = JSON.parse(raw); } catch {}
+  }
+
+  const updatedHistory = [...history, { role: "user", content: text }];
+
+  const systemPrompts = {
+    professional: context
+      ? `You are the AI twin of this person. Respond exactly as they would — using their voice, knowledge, judgment, and history. Never break character.\n\nEverything you know about this person:\n${context}`
+      : "You are a professional AI twin. Respond helpfully and professionally.",
+    companion: context
+      ? `You are a warm, deeply personal AI companion. You already know everything about this person. Be supportive, honest, and never judgmental.\n\nEverything you know about this person:\n${context}`
+      : "You are a warm AI companion. Be a kind, attentive listener.",
+  };
+
+  let reply = "Sorry, I couldn't generate a response.";
+  try {
+    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        system: systemPrompts[mode],
+        messages: updatedHistory,
+      }),
+      signal: AbortSignal.timeout(25000),
+    });
+    const data = await claudeRes.json();
+    reply = data.content?.[0]?.text || reply;
+  } catch {}
+
+  if (env.MEMORY) {
+    const saved = [...updatedHistory, { role: "assistant", content: reply }];
+    await env.MEMORY.put(`slack-hist:${threadKey}`, JSON.stringify(saved.slice(-20)));
+  }
+
+  if (env.SLACK_BOT_TOKEN) {
+    await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SLACK_BOT_TOKEN}` },
+      body: JSON.stringify({ channel: event.channel, thread_ts: event.thread_ts || event.ts, text: reply }),
+    }).catch(() => {});
+  }
+}
+
 export default {
   async scheduled(event, env) {
     const now = new Date().toUTCString();
@@ -578,8 +647,8 @@ export default {
       return new Response("Forbidden", { status: 403, headers: SECURITY_HEADERS });
     }
 
-    // Distributed rate limit: 60 req/min globally (skip Stripe webhooks)
-    if (url.pathname !== "/webhook") {
+    // Distributed rate limit: 60 req/min globally (skip Stripe + Slack webhooks)
+    if (url.pathname !== "/webhook" && url.pathname !== "/slack/events") {
       const { limited, firstHit } = await checkRateLimit(env, ip, "RL_GLOBAL");
       if (limited) {
         if (firstHit) await alertSecurityBreach(env, "RATE LIMIT EXCEEDED", `IP: ${ip}\nPath: ${url.pathname}\nThreat Score: ${threatScore}`);
@@ -597,6 +666,30 @@ export default {
     // Non-empty fallback prevents crypto.subtle.importKey throwing on empty key
     const sessionSecret = env.SESSION_SECRET || env.STRIPE_WEBHOOK_SECRET || "fx-agent9-session-default-v1";
     const cookieHeader = request.headers.get("Cookie") || "";
+
+    // POST /slack/events — Slack bot (app_mention + DMs → Claude → reply in Slack)
+    if (url.pathname === "/slack/events" && request.method === "POST") {
+      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503 });
+      const tsHeader = request.headers.get("X-Slack-Request-Timestamp") || "";
+      const slackSig = request.headers.get("X-Slack-Signature") || "";
+      const rawBody = await request.text();
+      if (Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
+        return new Response("Stale request", { status: 403, headers: SECURITY_HEADERS });
+      }
+      const valid = await verifyHmac(`v0:${tsHeader}:${rawBody}`, env.SLACK_SIGNING_SECRET, slackSig.replace("v0=", ""));
+      if (!valid) return new Response("Invalid signature", { status: 403, headers: SECURITY_HEADERS });
+      let payload;
+      try { payload = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      if (payload.type === "url_verification") {
+        return new Response(JSON.stringify({ challenge: payload.challenge }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      if (payload.type === "event_callback") {
+        ctx.waitUntil(handleSlackEvent(payload.event, env));
+      }
+      return new Response("ok", { headers: SECURITY_HEADERS });
+    }
 
     // GET /login — serve login page
     if (url.pathname === "/login" && request.method === "GET") {
@@ -1090,6 +1183,10 @@ curl -X POST https://fixitagent.ai/alert \\
                                 : fail("STRIPE_WEBHOOK_SECRET set", "Missing — webhook forgery possible");
       env.SLACK_WEBHOOK_URL     ? pass("SLACK_WEBHOOK_URL set",     "Security alerts will deliver")
                                 : warn("SLACK_WEBHOOK_URL set",     "Missing — security breach alerts are silent");
+      env.SLACK_SIGNING_SECRET  ? pass("SLACK_SIGNING_SECRET set",  "Slack event signatures will be verified")
+                                : warn("SLACK_SIGNING_SECRET set",  "Missing — /slack/events will return 503");
+      env.SLACK_BOT_TOKEN       ? pass("SLACK_BOT_TOKEN set",       "Bot can post replies to Slack")
+                                : warn("SLACK_BOT_TOKEN set",       "Missing — bot cannot post replies");
       env.OWNER_EMAIL           ? pass("OWNER_EMAIL set",           env.OWNER_EMAIL)
                                 : warn("OWNER_EMAIL set",           "Falling back to hardcoded rojasjay@gmail.com");
 

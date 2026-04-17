@@ -1363,6 +1363,26 @@ ${checks.map(c => `<div class="row">
       return new Response(evalHTML, { headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS } });
     }
 
+    // GET /slack/bot-status — no auth, checks if bot token is valid via Slack auth.test
+    if (url.pathname === "/slack/bot-status" && request.method === "GET") {
+      if (!env.SLACK_BOT_TOKEN) {
+        return new Response(JSON.stringify({ ok: false, error: "SLACK_BOT_TOKEN not set in worker" }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
+      }
+      const r = await fetch("https://slack.com/api/auth.test", {
+        headers: { "Authorization": `Bearer ${env.SLACK_BOT_TOKEN}` },
+        signal: AbortSignal.timeout(8000),
+      }).catch(e => ({ ok: false, _err: String(e) }));
+      if (!r.ok && r._err) return new Response(JSON.stringify({ ok: false, error: r._err }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
+      const data = await r.json();
+      return new Response(JSON.stringify({
+        slack_ok: data.ok,
+        error: data.error || null,
+        bot_user: data.user_id || null,
+        team: data.team || null,
+        signing_secret_set: !!env.SLACK_SIGNING_SECRET,
+      }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
+    }
+
     // GET /test-slack — owner-only, fires a test message to Slack
     if (url.pathname === "/test-slack" && request.method === "GET") {
       const email = await verifySessionCookie(cookieHeader, sessionSecret);

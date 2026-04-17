@@ -555,9 +555,16 @@ async function handleSlackEvent(event, env) {
       }),
       signal: AbortSignal.timeout(25000),
     });
-    const data = await claudeRes.json();
-    reply = data.content?.[0]?.text || reply;
-  } catch {}
+    if (!claudeRes.ok) {
+      const errText = await claudeRes.text();
+      console.error(JSON.stringify({ event: "SLACK_CLAUDE_ERROR", status: claudeRes.status, body: errText.slice(0, 300) }));
+    } else {
+      const data = await claudeRes.json();
+      reply = data.content?.[0]?.text || reply;
+    }
+  } catch (e) {
+    console.error(JSON.stringify({ event: "SLACK_CLAUDE_EXCEPTION", err: String(e) }));
+  }
 
   if (env.MEMORY) {
     const saved = [...updatedHistory, { role: "assistant", content: reply }];
@@ -565,11 +572,20 @@ async function handleSlackEvent(event, env) {
   }
 
   if (env.SLACK_BOT_TOKEN) {
-    await fetch("https://slack.com/api/chat.postMessage", {
+    const postRes = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SLACK_BOT_TOKEN}` },
       body: JSON.stringify({ channel: event.channel, thread_ts: event.thread_ts || event.ts, text: reply }),
-    }).catch(() => {});
+    }).catch(e => { console.error(JSON.stringify({ event: "SLACK_POST_EXCEPTION", err: String(e) })); return null; });
+    if (postRes && !postRes.ok) {
+      const body = await postRes.text().catch(() => "");
+      console.error(JSON.stringify({ event: "SLACK_POST_ERROR", status: postRes.status, body: body.slice(0, 300) }));
+    } else if (postRes) {
+      const data = await postRes.json().catch(() => ({}));
+      if (!data.ok) console.error(JSON.stringify({ event: "SLACK_POST_FAIL", error: data.error }));
+    }
+  } else {
+    console.error(JSON.stringify({ event: "SLACK_BOT_TOKEN_MISSING" }));
   }
 }
 

@@ -249,35 +249,35 @@ const LOGIN_HTML = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Access — fixitagent.ai</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Sign in — AI U</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#04080f;color:#8ec8e8;font-family:'IBM Plex Mono',monospace;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,160,255,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,160,255,0.07) 1px,transparent 1px);background-size:60px 60px}
-  .box{position:relative;z-index:1;width:100%;max-width:400px;border:1px solid #0d2040;background:#070d1a;padding:48px 40px}
-  .logo{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:#d0eeff;letter-spacing:2px;margin-bottom:40px;text-decoration:none;display:block;text-shadow:0 0 20px rgba(0,200,255,0.5)}
-  .logo span{color:#00c8ff}
-  h1{font-family:'Orbitron',monospace;font-size:20px;color:#d0eeff;margin-bottom:10px}
-  p{font-size:13px;color:#2a5070;margin-bottom:28px;line-height:1.7}
-  input{width:100%;background:#04080f;border:1px solid #0d2040;padding:12px 16px;color:#d0eeff;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;transition:border-color 0.2s}
-  input:focus{border-color:#00c8ff;box-shadow:0 0 8px rgba(0,200,255,0.2)}
-  button{width:100%;background:#00c8ff;border:1px solid #00c8ff;padding:12px;color:#04080f;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:1px;transition:all 0.2s}
-  button:hover{background:#40d8ff;box-shadow:0 0 20px rgba(0,200,255,0.3)}
-  button:disabled{background:#071a2e;border-color:#0d2040;color:#0066aa;cursor:not-allowed}
-  .msg{margin-top:16px;font-size:12px;color:#ff4e4e;min-height:20px;line-height:1.6}
-  .msg.ok{color:#00c8ff}
-  .footer{margin-top:32px;font-size:12px;color:#2a5070}
-  .footer a{color:#00c8ff;text-decoration:none}
+  body{background:#111010;color:#f0ece6;font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .box{width:100%;max-width:380px}
+  .logo{font-family:'DM Serif Display',serif;font-size:22px;color:#f0ece6;margin-bottom:48px;text-decoration:none;display:block}
+  .logo span{color:#c8a96e}
+  h1{font-family:'DM Serif Display',serif;font-size:28px;color:#f0ece6;margin-bottom:8px;line-height:1.2}
+  .sub{font-size:14px;color:#8a8480;margin-bottom:32px;font-weight:300}
+  input{width:100%;background:#1c1b1a;border:1px solid rgba(240,236,230,0.1);padding:13px 16px;color:#f0ece6;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;border-radius:8px;margin-bottom:12px;transition:border-color 0.2s}
+  input:focus{border-color:rgba(200,169,110,0.4)}
+  input::placeholder{color:#5a5654}
+  button{width:100%;background:#c8a96e;border:none;padding:13px;color:#111;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border-radius:8px;transition:background 0.15s}
+  button:hover{background:#d4b678}
+  button:disabled{background:#2a2826;color:#5a5654;cursor:not-allowed}
+  .msg{margin-top:14px;font-size:13px;color:#e07070;min-height:18px;line-height:1.5}
+  .msg.ok{color:#4caf7a}
+  .footer{margin-top:28px;font-size:13px;color:#5a5654}
+  .footer a{color:#c8a96e;text-decoration:none}
 </style>
 </head>
 <body>
 <div class="box">
-  <a href="/" class="logo">FX<span>AGENT</span></a>
-  <h1>Member Access</h1>
-  <p>Enter the email you used to subscribe.</p>
+  <a href="/" class="logo">AI <span>U</span></a>
+  <h1>Welcome back.</h1>
+  <p class="sub">Enter the email you used to subscribe.</p>
   <input type="email" id="email" placeholder="you@example.com" autofocus />
-  <button id="btn" onclick="login()">ACCESS AGENTS →</button>
+  <button id="btn" onclick="login()">Sign in →</button>
   <div class="msg" id="msg"></div>
   <div class="footer">Not a member? <a href="/#pricing">See plans →</a></div>
 </div>
@@ -287,7 +287,7 @@ async function login() {
   const msg = document.getElementById('msg');
   const btn = document.getElementById('btn');
   if (!email) { msg.textContent = 'Enter your email.'; return; }
-  btn.disabled = true; btn.textContent = 'CHECKING...'; msg.textContent = '';
+  btn.disabled = true; btn.textContent = 'Checking...'; msg.textContent = '';
   try {
     const res = await fetch('/login', {
       method: 'POST',
@@ -298,7 +298,7 @@ async function login() {
     const text = await res.text();
     msg.textContent = text || 'No active subscription found. Check your email or upgrade.';
   } catch { msg.textContent = 'Something went wrong. Try again.'; }
-  btn.disabled = false; btn.textContent = 'ACCESS AGENTS →';
+  btn.disabled = false; btn.textContent = 'Sign in →';
 }
 document.getElementById('email').addEventListener('keydown', e => e.key === 'Enter' && login());
 </script>

@@ -512,7 +512,10 @@ async function handleSlackEvent(event, env) {
         });
         if (imgRes.ok) {
           const buf = await imgRes.arrayBuffer();
-          const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          const bytes = new Uint8Array(buf);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          const b64 = btoa(binary);
           userContent.push({ type: "image", source: { type: "base64", media_type: file.mimetype, data: b64 } });
         }
       } catch {}
@@ -608,28 +611,28 @@ export default {
     const url = new URL(request.url);
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-    // Handle Slack URL verification before any middleware
+    // Handle Slack events — before all middleware so URL verification responds instantly
     if (url.pathname === "/slack/events" && request.method === "POST") {
       const rawBody = await request.text();
       let payload;
-      try { payload = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      try { payload = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400, headers: SECURITY_HEADERS }); }
       if (payload.type === "url_verification") {
         return new Response(JSON.stringify({ challenge: payload.challenge }), {
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
         });
       }
-      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503 });
+      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503, headers: SECURITY_HEADERS });
       const tsHeader = request.headers.get("X-Slack-Request-Timestamp") || "";
       const slackSig = request.headers.get("X-Slack-Signature") || "";
-      if (Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
-        return new Response("Stale request", { status: 403 });
+      if (!tsHeader || Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
+        return new Response("Stale request", { status: 403, headers: SECURITY_HEADERS });
       }
       const valid = await verifyHmac(`v0:${tsHeader}:${rawBody}`, env.SLACK_SIGNING_SECRET, slackSig.replace("v0=", ""));
-      if (!valid) return new Response("Invalid signature", { status: 403 });
+      if (!valid) return new Response("Invalid signature", { status: 403, headers: SECURITY_HEADERS });
       if (payload.type === "event_callback") {
         ctx.waitUntil(handleSlackEvent(payload.event, env));
       }
-      return new Response("ok");
+      return new Response("ok", { headers: SECURITY_HEADERS });
     }
 
     // ── Tracing ────────────────────────────────────────────────────────────────
@@ -716,32 +719,6 @@ export default {
     // Non-empty fallback prevents crypto.subtle.importKey throwing on empty key
     const sessionSecret = env.SESSION_SECRET || env.STRIPE_WEBHOOK_SECRET || "fx-agent9-session-default-v1";
     const cookieHeader = request.headers.get("Cookie") || "";
-
-    // POST /slack/events — Slack bot (app_mention + DMs → Claude → reply in Slack)
-    if (url.pathname === "/slack/events" && request.method === "POST") {
-      const rawBody = await request.text();
-      let payload;
-      try { payload = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
-      // Handle URL verification before HMAC (one-time setup ping from Slack)
-      if (payload.type === "url_verification") {
-        return new Response(JSON.stringify({ challenge: payload.challenge }), {
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      // Verify signature for all real events
-      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503 });
-      const tsHeader = request.headers.get("X-Slack-Request-Timestamp") || "";
-      const slackSig = request.headers.get("X-Slack-Signature") || "";
-      if (Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
-        return new Response("Stale request", { status: 403, headers: SECURITY_HEADERS });
-      }
-      const valid = await verifyHmac(`v0:${tsHeader}:${rawBody}`, env.SLACK_SIGNING_SECRET, slackSig.replace("v0=", ""));
-      if (!valid) return new Response("Invalid signature", { status: 403, headers: SECURITY_HEADERS });
-      if (payload.type === "event_callback") {
-        ctx.waitUntil(handleSlackEvent(payload.event, env));
-      }
-      return new Response("ok", { headers: SECURITY_HEADERS });
-    }
 
     // GET /login — serve login page
     if (url.pathname === "/login" && request.method === "GET") {
@@ -1381,14 +1358,14 @@ ${checks.map(c => `<div class="row">
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: `🧪 *Agent9 Slack Test*\nWorker is online and Slack is connected.\n*Time:* ${new Date().toUTCString()}` })
       });
-      return new Response(res.ok ? "Slack OK" : `Slack error: ${res.status}`, { status: res.ok ? 200 : 500 });
+      return new Response(res.ok ? "Slack OK" : `Slack error: ${res.status}`, { status: res.ok ? 200 : 500, headers: SECURITY_HEADERS });
     }
 
     // GET /logout — clear cookie and redirect home
     if (url.pathname === "/logout") {
       return new Response(null, {
         status: 302,
-        headers: { "Location": "https://fixitagent.ai/", "Set-Cookie": authCookie("", 0) }
+        headers: { "Location": "https://fixitagent.ai/", "Set-Cookie": authCookie("", 0), ...SECURITY_HEADERS }
       });
     }
 
@@ -1556,9 +1533,9 @@ ${checks.map(c => `<div class="row">
         body: params.toString(),
       });
       const session = await stripeRes.json();
-      if (!stripeRes.ok) return new Response(JSON.stringify(session), { status: stripeRes.status, headers: { "Content-Type": "application/json" } });
+      if (!stripeRes.ok) return new Response(JSON.stringify(session), { status: stripeRes.status, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
       return new Response(JSON.stringify({ url: session.url }), {
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
       });
     }
 
@@ -1571,12 +1548,12 @@ ${checks.map(c => `<div class="row">
         const valid = await verifyStripeSignature(rawBody, sig || "", env.STRIPE_WEBHOOK_SECRET);
         if (!valid) {
           await alertSecurityBreach(env, "INVALID STRIPE SIGNATURE", `IP: ${ip}\nPossible webhook forgery attempt`);
-          return new Response("Invalid signature", { status: 400 });
+          return new Response("Invalid signature", { status: 400, headers: SECURITY_HEADERS });
         }
       }
 
       let event;
-      try { event = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400 }); }
+      try { event = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400, headers: SECURITY_HEADERS }); }
 
       let slackMsg = null;
 
@@ -1627,7 +1604,7 @@ ${checks.map(c => `<div class="row">
         }).catch(() => {});
       }
 
-      return new Response("OK", { status: 200 });
+      return new Response("OK", { status: 200, headers: SECURITY_HEADERS });
     }
 
     // POST /alert — authenticated inbound alert from customer monitoring system

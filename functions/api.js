@@ -637,15 +637,23 @@ export default {
           headers: { "Content-Type": "application/json", ...SECURITY_HEADERS }
         });
       }
-      if (!env.SLACK_SIGNING_SECRET) return new Response("Not configured", { status: 503, headers: SECURITY_HEADERS });
+      if (!env.SLACK_SIGNING_SECRET) {
+        if (env.MEMORY) await env.MEMORY.put("slack-debug-last", JSON.stringify({ t: Date.now(), result: "503_no_signing_secret" }));
+        return new Response("Not configured", { status: 503, headers: SECURITY_HEADERS });
+      }
       const tsHeader = request.headers.get("X-Slack-Request-Timestamp") || "";
       const slackSig = request.headers.get("X-Slack-Signature") || "";
       if (!tsHeader || Math.abs(Date.now() / 1000 - parseInt(tsHeader)) > 300) {
+        if (env.MEMORY) await env.MEMORY.put("slack-debug-last", JSON.stringify({ t: Date.now(), result: "403_stale_timestamp", ts: tsHeader }));
         return new Response("Stale request", { status: 403, headers: SECURITY_HEADERS });
       }
       const valid = await verifyHmac(`v0:${tsHeader}:${rawBody}`, env.SLACK_SIGNING_SECRET, slackSig.replace("v0=", ""));
-      if (!valid) return new Response("Invalid signature", { status: 403, headers: SECURITY_HEADERS });
+      if (!valid) {
+        if (env.MEMORY) await env.MEMORY.put("slack-debug-last", JSON.stringify({ t: Date.now(), result: "403_invalid_hmac" }));
+        return new Response("Invalid signature", { status: 403, headers: SECURITY_HEADERS });
+      }
       if (payload.type === "event_callback") {
+        if (env.MEMORY) await env.MEMORY.put("slack-debug-last", JSON.stringify({ t: Date.now(), result: "ok_processing", event_type: payload.event?.type, channel_type: payload.event?.channel_type, has_text: !!(payload.event?.text) }));
         ctx.waitUntil(handleSlackEvent(payload.event, env));
       }
       return new Response("ok", { headers: SECURITY_HEADERS });
@@ -1361,6 +1369,12 @@ ${checks.map(c => `<div class="row">
 </div></body></html>`;
 
       return new Response(evalHTML, { headers: { "Content-Type": "text/html;charset=UTF-8", ...SECURITY_HEADERS } });
+    }
+
+    // GET /slack/last-event — shows what the last Slack event did (debug)
+    if (url.pathname === "/slack/last-event" && request.method === "GET") {
+      const data = env.MEMORY ? await env.MEMORY.get("slack-debug-last") : null;
+      return new Response(data || JSON.stringify({ result: "no_events_received_yet" }), { headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
     }
 
     // GET /slack/bot-status — no auth, checks if bot token is valid via Slack auth.test

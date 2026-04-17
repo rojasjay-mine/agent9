@@ -630,6 +630,7 @@ export default {
     // Handle Slack events — before all middleware so URL verification responds instantly
     if (url.pathname === "/slack/events" && request.method === "POST") {
       const rawBody = await request.text();
+      if (env.MEMORY) await env.MEMORY.put("slack-debug-last", JSON.stringify({ t: Date.now(), result: "received_post", body_len: rawBody.length }));
       let payload;
       try { payload = JSON.parse(rawBody); } catch { return new Response("Invalid JSON", { status: 400, headers: SECURITY_HEADERS }); }
       if (payload.type === "url_verification") {

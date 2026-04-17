@@ -482,7 +482,8 @@ async function handleSlackEvent(event, env) {
   if (!isDM && !isMention) return;
 
   const text = (event.text || "").replace(/<@[A-Z0-9]+>/g, "").trim();
-  if (!text) return;
+  const imageFiles = (event.files || []).filter(f => f.mimetype?.startsWith("image/") && f.url_private);
+  if (!text && imageFiles.length === 0) return;
 
   const mode = isDM ? "companion" : "professional";
   const ownerEmail = (env.OWNER_EMAIL || "").toLowerCase();
@@ -498,7 +499,32 @@ async function handleSlackEvent(event, env) {
     if (raw) try { history = JSON.parse(raw); } catch {}
   }
 
-  const updatedHistory = [...history, { role: "user", content: text }];
+  // Build current-turn content — text + any images fetched from Slack
+  let userContent;
+  if (imageFiles.length > 0 && env.SLACK_BOT_TOKEN) {
+    userContent = [];
+    if (text) userContent.push({ type: "text", text });
+    for (const file of imageFiles.slice(0, 4)) {
+      try {
+        const imgRes = await fetch(file.url_private, {
+          headers: { "Authorization": `Bearer ${env.SLACK_BOT_TOKEN}` },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (imgRes.ok) {
+          const buf = await imgRes.arrayBuffer();
+          const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          userContent.push({ type: "image", source: { type: "base64", media_type: file.mimetype, data: b64 } });
+        }
+      } catch {}
+    }
+    if (userContent.length === 0) userContent = text || "(image)";
+  } else {
+    userContent = text;
+  }
+
+  // History stored as text-only (no base64 blobs in KV)
+  const historyText = text || (imageFiles.length > 0 ? "[image]" : "");
+  const updatedHistory = [...history, { role: "user", content: historyText }];
 
   const systemPrompts = {
     professional: context
@@ -522,7 +548,7 @@ async function handleSlackEvent(event, env) {
         model: "claude-sonnet-4-6",
         max_tokens: 4096,
         system: systemPrompts[mode],
-        messages: updatedHistory,
+        messages: [...history, { role: "user", content: userContent }],
       }),
       signal: AbortSignal.timeout(25000),
     });

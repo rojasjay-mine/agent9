@@ -27,3 +27,5 @@ jobs:
           echo "whsec_bAPLGxBo2XEQ8dJOVYBTFxopxVvtWaoR" | npx wrangler@3 secret put STRIPE_WEBHOOK_SECRET
           echo "a4354d782c730a968178a0dab5730ad063d31a87c61bc4e27728a0c40ca38c43" | npx wrangler@3 secret put SESSION_SECRET
           echo "rojasjay@gmail.com" | npx wrangler@3 secret put OWNER_EMAIL
+          echo "${{ secrets.SLACK_BOT_TOKEN }}" | npx wrangler@3 secret put SLACK_BOT_TOKEN
+          echo "${{ secrets.SLACK_SIGNING_SECRET }}" | npx wrangler@3 secret put SLACK_SIGNING_SECRET
